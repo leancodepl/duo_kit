@@ -1,0 +1,22 @@
+name: duo_kit_example
+description: Shows duo_kit laying plain widgets out on a foldable.
+publish_to: none
+
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: '>=3.41.0'
+
+dependencies:
+  duo_kit:
+    path: ../
+  flutter:
+    sdk: flutter
+  # Publishes the fold and the camera of iPhone Duo to the display features.
+  foldable: ^1.0.5
+
+dev_dependencies:
+  leancode_lint: ^21.0.0
+
+dependency_overrides:
+  # Flutter 3.41 pins `meta` to `1.17.0`, but the analyzer plugins require `1.18.0`
+  meta: ^1.18.0

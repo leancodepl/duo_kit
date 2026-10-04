@@ -1,0 +1,11 @@
+# Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
+/pubspec.lock
+
+.dart_tool/
+build/
+.flutter-plugins-dependencies
+
+.DS_Store
+
+# FVM Version Cache
+.fvm/

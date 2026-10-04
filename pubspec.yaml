@@ -1,0 +1,30 @@
+name: duo_kit
+description: Layouts for foldables such as iPhone Duo. Fold geometry, a scaffold and a split view that place any widgets and draw nothing themselves.
+version: 0.1.0
+homepage: https://github.com/leancodepl/duo_kit
+repository: https://github.com/leancodepl/duo_kit
+issue_tracker: https://github.com/leancodepl/duo_kit/issues
+
+topics:
+  - foldable
+  - dual-screen
+  - layout
+  - responsive
+  - adaptive
+
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: '>=3.41.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  leancode_lint: ^21.0.0
+
+dependency_overrides:
+  # Flutter 3.41 pins `meta` to `1.17.0`, but the analyzer plugins require `1.18.0`
+  meta: ^1.18.0
