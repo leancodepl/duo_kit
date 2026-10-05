@@ -203,7 +203,10 @@ class FoldGeometry {
 
   /// Uses the rule Flutter's [DisplayFeatureSubScreen] splits dialogs by: the
   /// fold takes up room or the device is half open, and the fold crosses the
-  /// whole window.
+  /// whole window with room on both of its sides.
+  ///
+  /// In Split View on iPhone Duo the fold can lie at an edge of the window,
+  /// with room on one side only, and then splits nothing.
   static FoldDivision? _toDivision(DisplayFeature feature, Rect window) {
     final bounds = feature.bounds;
     final isFold =
@@ -216,12 +219,18 @@ class FoldGeometry {
       return null;
     }
 
-    final spansHeight =
-        bounds.top <= window.top && bounds.bottom >= window.bottom;
-    final spansWidth =
-        bounds.left <= window.left && bounds.right >= window.right;
+    final splitsSideBySide =
+        bounds.top <= window.top &&
+        bounds.bottom >= window.bottom &&
+        bounds.left > window.left &&
+        bounds.right < window.right;
+    final splitsAboveAndBelow =
+        bounds.left <= window.left &&
+        bounds.right >= window.right &&
+        bounds.top > window.top &&
+        bounds.bottom < window.bottom;
 
-    final axis = switch ((spansHeight, spansWidth)) {
+    final axis = switch ((splitsSideBySide, splitsAboveAndBelow)) {
       (true, _) => Axis.vertical,
       (_, true) => Axis.horizontal,
       _ => null,

@@ -1,3 +1,5 @@
+import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
+
 import 'package:duo_kit/duo_kit.dart';
 import 'package:duo_kit/testing.dart';
 import 'package:flutter/widgets.dart';
@@ -13,6 +15,27 @@ const _foldStart = 455.5;
 const _foldEnd = 495.5;
 const _innerShortSide = 669.0;
 const _innerLongSide = 951.0;
+const _splitViewWindowWidth = 469.0;
+
+/// The window of the app on the left of Split View, half open, with the fold
+/// at its right edge. Measured on the iPhone Duo simulator (iOS 27.1).
+const _leftAppHalfOpened = MediaQueryData(
+  size: Size(_splitViewWindowWidth, _innerShortSide),
+  padding: EdgeInsets.only(bottom: 34),
+  viewPadding: EdgeInsets.only(bottom: 34),
+  displayFeatures: [
+    DisplayFeature(
+      bounds: Rect.fromLTRB(
+        _foldStart,
+        0,
+        _splitViewWindowWidth,
+        _innerShortSide,
+      ),
+      type: DisplayFeatureType.fold,
+      state: DisplayFeatureState.postureHalfOpened,
+    ),
+  ],
+);
 
 const _splitView = FoldSplitView(
   first: SizedBox.expand(key: _firstKey),
@@ -199,6 +222,33 @@ void main() {
 
     expect(find.byKey(_unfoldedKey), findsOneWidget);
   });
+
+  testWidgets('shows the unfolded layout where its edge lies on the fold', (
+    tester,
+  ) async {
+    await _pumpPose(
+      tester,
+      FoldTestPose.duoHalfOpenedLandscape,
+      const Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(width: (_foldStart + _foldEnd) / 2, child: _splitView),
+          Spacer(),
+        ],
+      ),
+    );
+
+    expect(find.byKey(_unfoldedKey), findsOneWidget);
+  });
+
+  testWidgets(
+    'shows the unfolded layout for a fold on the edge of the window',
+    (tester) async {
+      await _pumpData(tester, _leftAppHalfOpened, _splitView);
+
+      expect(find.byKey(_unfoldedKey), findsOneWidget);
+    },
+  );
 
   testWidgets('shows the unfolded layout with unbounded constraints', (
     tester,

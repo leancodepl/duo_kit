@@ -147,6 +147,31 @@ void main() {
       expect(geometry.strip, isNull);
     });
 
+    test('does not split at a fold on the edge of a Split View window', () {
+      // The window of the app on the left of Split View, measured half open,
+      // and the one on the right, with the fold where the bridge reports it.
+      const window = Size(469, 669);
+      final left = FoldGeometry.fromMediaQuery(
+        _withFeature(
+          window,
+          const Rect.fromLTRB(455.5, 0, 469, 669),
+          DisplayFeatureType.fold,
+          DisplayFeatureState.postureHalfOpened,
+        ),
+      );
+      final right = FoldGeometry.fromMediaQuery(
+        _withFeature(
+          window,
+          const Rect.fromLTRB(0, 0, 13.5, 669),
+          DisplayFeatureType.fold,
+          DisplayFeatureState.postureHalfOpened,
+        ),
+      );
+
+      expect(left.division, isNull);
+      expect(right.division, isNull);
+    });
+
     test('finds no strip on other iPhones and iPads', () {
       const poses = [
         // iPhone in portrait.

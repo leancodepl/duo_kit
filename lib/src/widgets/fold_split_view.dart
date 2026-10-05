@@ -9,6 +9,9 @@ typedef FoldSplitViewBuilder =
 /// Lays [first] and [second] out on either side of a fold that crosses this
 /// widget, and in the layout from [unfoldedBuilder] otherwise.
 ///
+/// A fold at an edge of this widget, with room on one side only, counts as no
+/// fold.
+///
 /// The fold itself is left empty. Across a vertical fold [first] takes the
 /// leading side; across a horizontal fold, the top. Each pane keeps only the
 /// padding and the view insets, such as the keyboard, of the edges of this
@@ -123,7 +126,9 @@ class _FoldSplitViewState extends State<FoldSplitView> {
 
         return switch ((division?.axis, localFold)) {
           (final axis?, final fold?)
-              when bounds.isFinite && fold.overlaps(bounds) =>
+              when bounds.isFinite &&
+                  fold.overlaps(bounds) &&
+                  _hasRoomOnBothSides(fold: fold, bounds: bounds, axis: axis) =>
             _buildSplit(
               context,
               bounds: bounds,
@@ -137,6 +142,17 @@ class _FoldSplitViewState extends State<FoldSplitView> {
       },
     );
   }
+
+  /// Whether [fold] leaves room for a pane on both of its sides within
+  /// [bounds], rather than lying at or past an edge of [bounds].
+  static bool _hasRoomOnBothSides({
+    required Rect fold,
+    required Rect bounds,
+    required Axis axis,
+  }) => switch (axis) {
+    Axis.vertical => fold.left > bounds.left && fold.right < bounds.right,
+    Axis.horizontal => fold.top > bounds.top && fold.bottom < bounds.bottom,
+  };
 
   Widget _buildSplit(
     BuildContext context, {

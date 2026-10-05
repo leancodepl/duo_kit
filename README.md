@@ -180,24 +180,6 @@ import 'package:duo_kit/testing.dart';
 MediaQuery(data: FoldTestPose.duoHalfOpenedLandscape.data, child: screen)
 ```
 
-## What iPhone Duo reports
-
-Measured on the iPhone Duo simulator with iOS 27.1 (Xcode 27.1, build
-27A9269) in September and October 2026:
-
-| Pose | Window | Insets | Status cluster | Fold |
-|---|---|---|---|---|
-| Cover display | 466 × 678 | right 84, bottom 34 | top 170 of the strip | – |
-| Inner display, landscape | 951 × 669 | right 84, bottom 34 | top 120 of the strip | 455.5–495.5 |
-| Inner display, portrait | 669 × 951 | top 82, bottom 34 | top right 134 × 82 | 455.5–495.5 |
-
-The strip stays on the right in both landscape rotations and in right-to-left
-languages, where iOS calls that edge leading rather than trailing. According to
-Apple's [guidelines for iPhone Duo][hig-duo], it is on the left only for the app
-on the left of Split View; `FoldScaffold` then puts the navigation there, with
-`FoldNavigationPlacement.left`. That case is covered by tests only: on the
-simulator, a Flutter app on the left of Split View showed no strip at all. The
-fold is only reported while the device is half open.
 
 ## Limitations
 
