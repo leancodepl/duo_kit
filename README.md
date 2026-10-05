@@ -15,6 +15,8 @@ its controls, the fold, the camera and the status cluster – and places your
 widgets around it. It draws nothing itself and has no opinion on how your app
 looks: the navigation, the panes and the dialogs are your own widgets.
 
+![The example app on iPhone Duo: as the device opens like a book, the list and its details move to either side of the fold, and back when it lies flat][hero-img]
+
 ## Features
 
 - **`FoldGeometry`** – the strip, the fold and the occlusions of the window,
@@ -98,6 +100,8 @@ inset, or in the strip the room taken by the camera and the status cluster – s
 a `SafeArea` inside it keeps it clear. The body stays the same widget in every
 pose and keeps its state.
 
+![The navigation in the strip of the cover display, below the status cluster, and along the bottom edge of the inner display in portrait][navigation-img]
+
 In a strip, `placement` is `left` or `right`, the side the strip runs along.
 Put whatever faces the content, such as a divider or a selection indicator, on
 the edge towards the body.
@@ -149,6 +153,8 @@ showDialog(
 it; across a vertical fold both open on the trailing side. Overlays that are not
 routes can do the same with `DisplayFeatureSubScreen`.
 
+<img src="https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/doc/imgs/dialogs.gif" width="360" alt="iPhone Duo half open like a laptop: a reminder opens above the fold as content, and stream controls below it as controls">
+
 ### Geometry
 
 ```dart
@@ -159,6 +165,12 @@ geometry.division; // The fold that splits the window, if any.
 geometry.occlusions; // Cameras and the status cluster.
 geometry.availableWidth; // The width without the side insets.
 ```
+
+![The geometry of four iPhone Duo poses, painted over the example app][geometry-img]
+
+The cover display and the inner display lying flat, then half open like a book
+and like a laptop, as `FoldGeometryOverlay` paints them: the strip in blue, the
+camera and the status cluster in orange, and the fold in red.
 
 ### Development tools
 
@@ -228,6 +240,9 @@ We are **top-tier experts** focused on Flutter Enterprise solutions.
 [pub-badge]: https://img.shields.io/pub/v/duo_kit
 [pub-badge-link]: https://pub.dev/packages/duo_kit
 [banner-img]: https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/doc/imgs/banner.png
+[hero-img]: https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/doc/imgs/hero.gif
+[navigation-img]: https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/doc/imgs/navigation.png
+[geometry-img]: https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/doc/imgs/geometry.png
 [foldable]: https://pub.dev/packages/foldable
 [hig-duo]: https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo
 [closed-fold-occlusions]: https://github.com/leancodepl/duo_kit/blob/main/example/lib/closed_fold_occlusions.dart

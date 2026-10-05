@@ -1,0 +1,16 @@
+# pub reads this file instead of .gitignore, so it repeats .gitignore.
+
+# Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
+/pubspec.lock
+
+.dart_tool/
+build/
+.flutter-plugins-dependencies
+
+.DS_Store
+
+# FVM Version Cache
+.fvm/
+
+# The README links to its images on GitHub.
+/doc/imgs/
