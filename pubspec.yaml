@@ -1,16 +1,22 @@
 name: duo_kit
-description: Layouts for foldables such as iPhone Duo. Fold geometry, a scaffold and a split view that place any widgets and draw nothing themselves.
+description: 'iPhone Duo and foldable layouts for Flutter: navigation in the strip, a split view across the fold and dialogs in one half, around your own widgets.'
 version: 0.1.0
 homepage: https://github.com/leancodepl/duo_kit
 repository: https://github.com/leancodepl/duo_kit
 issue_tracker: https://github.com/leancodepl/duo_kit/issues
 
 topics:
+  - iphone-duo
   - foldable
   - dual-screen
   - layout
-  - responsive
   - adaptive
+
+screenshots:
+  - description: Two panes move to either side of the fold as iPhone Duo opens like a book.
+    path: doc/imgs/hero.gif
+  - description: The strip, the camera, the status cluster and the fold in four iPhone Duo poses.
+    path: doc/imgs/geometry.png
 
 environment:
   sdk: '>=3.11.0 <4.0.0'

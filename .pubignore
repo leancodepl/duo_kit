@@ -12,8 +12,11 @@ build/
 # FVM Version Cache
 .fvm/
 
-# The README links to its images on GitHub.
-/doc/imgs/
+# The README links to its images on GitHub. Only the screenshots listed in
+# pubspec.yaml go into the package.
+/doc/imgs/*
+!/doc/imgs/hero.gif
+!/doc/imgs/geometry.png
 
 # Overrides for working on the package, not for its users.
 /pubspec_overrides.yaml
