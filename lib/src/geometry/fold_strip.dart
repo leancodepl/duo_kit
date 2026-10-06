@@ -12,9 +12,10 @@ enum FoldStripSide {
 /// A strip along a side edge of the window that the system keeps for its own
 /// controls, like the one iPhone Duo has beside its status cluster.
 ///
-/// On iPhone Duo the strip stays aligned with the hardware: on the right in
-/// both landscape rotations and in right-to-left languages, and on the left
-/// only for the app on the left of Split View.
+/// On iPhone Duo the strip stays aligned with the hardware, on the right in
+/// both landscape rotations and in right-to-left languages. iOS 27.1 reports no
+/// strip to a Flutter app on the left of Split View, so [FoldStripSide.left]
+/// comes only from a window with an inset on its left edge alone.
 ///
 /// The strip spans the full height of the window. [topClearance] and
 /// [bottomClearance] mark the parts of it covered by occlusions such as the

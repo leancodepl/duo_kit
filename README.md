@@ -102,9 +102,9 @@ pose and keeps its state.
 
 ![The navigation in the strip of the cover display, below the status cluster, and along the bottom edge of the inner display in portrait][navigation-img]
 
-In a strip, `placement` is `left` or `right`, the side the strip runs along.
-Put whatever faces the content, such as a divider or a selection indicator, on
-the edge towards the body.
+In a strip, `placement` is `left` or `right`, the side the strip runs along. On
+iPhone Duo it is `right`. Put whatever faces the content, such as a divider or a
+selection indicator, on the edge towards the body.
 
 ### Two panes
 
@@ -198,6 +198,9 @@ MediaQuery(data: FoldTestPose.duoHalfOpenedLandscape.data, child: screen)
 - A strip is looked for on iOS only, since an Android phone in landscape can
   report the same insets for its camera cutout. Pass `detectStrip` to change
   that.
+- Apple's [guidelines for iPhone Duo][hig-duo] put the strip on the left for
+  the app on the left of Split View, but iOS 27.1 reports no strip to a Flutter
+  app there, so its navigation stays at the bottom.
 - `FoldSplitView` measures where it sits after it builds, resizes or scrolls,
   and catches up one frame later.
 - With `foldable`, the fold reaches the display features about a second after
@@ -222,8 +225,6 @@ We are **top-tier experts** focused on Flutter Enterprise solutions.
 ### Why LeanCode?
 
 - **Creators of [Patrol][patrol-landing]** – the next-gen testing framework for Flutter.
-
-- **Production-Ready** – We use this package in apps with millions of users.
 - **Full-Cycle Product Development** – We take your product from scratch to long-term maintenance.
 
 <div align="center">

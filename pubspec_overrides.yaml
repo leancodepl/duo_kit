@@ -1,0 +1,5 @@
+# Kept out of pubspec.yaml, and out of the published package, so that users
+# resolve the dependencies of duo_kit without overrides.
+dependency_overrides:
+  # Flutter 3.41 pins `meta` to `1.17.0`, but the analyzer plugins require `1.18.0`
+  meta: ^1.18.0

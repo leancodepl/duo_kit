@@ -14,3 +14,6 @@ build/
 
 # The README links to its images on GitHub.
 /doc/imgs/
+
+# Overrides for working on the package, not for its users.
+/pubspec_overrides.yaml
