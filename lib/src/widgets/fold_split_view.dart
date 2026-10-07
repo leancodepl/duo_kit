@@ -1,3 +1,4 @@
+import 'package:duo_kit/src/geometry/fold_division.dart';
 import 'package:duo_kit/src/geometry/fold_geometry.dart';
 import 'package:flutter/widgets.dart';
 
@@ -57,11 +58,82 @@ class _FoldSplitViewState extends State<FoldSplitView> {
   final _firstKey = GlobalKey(debugLabel: 'FoldSplitView.first');
   final _secondKey = GlobalKey(debugLabel: 'FoldSplitView.second');
 
+  @override
+  Widget build(BuildContext context) {
+    final division = FoldGeometry.of(context).division;
+    final first = KeyedSubtree(key: _firstKey, child: widget.first);
+    final second = KeyedSubtree(key: _secondKey, child: widget.second);
+
+    return _WindowLayoutBuilder(
+      // Tracking the origin costs a rebuild for each move, so only while there
+      // is a fold.
+      tracksOrigin: division != null,
+      builder: (context, origin, size) =>
+          switch (_findLocalFold(division, origin: origin, size: size)) {
+            final fold? => _SplitPanes(
+              size: size,
+              fold: fold.rect,
+              axis: fold.axis,
+              first: first,
+              second: second,
+            ),
+            null => widget.unfoldedBuilder(context, first, second),
+          },
+    );
+  }
+
+  /// Finds the part of [division] that splits a widget of [size] placed at
+  /// [origin] in the window, in the coordinates of that widget.
+  ///
+  /// Returns null without a fold, for an infinite [size], and for a fold that
+  /// misses the widget or lies at one of its edges, with room on one side only.
+  static _LocalFold? _findLocalFold(
+    FoldDivision? division, {
+    required Offset origin,
+    required Size size,
+  }) {
+    if (division == null || !size.isFinite) {
+      return null;
+    }
+
+    final bounds = Offset.zero & size;
+    final fold = division.bounds.shift(-origin);
+    final hasRoomOnBothSides = switch (division.axis) {
+      Axis.vertical => fold.left > bounds.left && fold.right < bounds.right,
+      Axis.horizontal => fold.top > bounds.top && fold.bottom < bounds.bottom,
+    };
+    if (!fold.overlaps(bounds) || !hasRoomOnBothSides) {
+      return null;
+    }
+
+    return (rect: fold.intersect(bounds), axis: division.axis);
+  }
+}
+
+/// A fold in the coordinates of a [FoldSplitView].
+typedef _LocalFold = ({Rect rect, Axis axis});
+
+/// A [LayoutBuilder] that also passes where it sits in the window.
+///
+/// While it [tracksOrigin], it measures where it sits a frame after each build,
+/// resize or scroll of the nearest [Scrollable], and builds again if that
+/// moved.
+class _WindowLayoutBuilder extends StatefulWidget {
+  const _WindowLayoutBuilder({
+    required this.tracksOrigin,
+    required this.builder,
+  });
+
+  final bool tracksOrigin;
+  final Widget Function(BuildContext context, Offset origin, Size size) builder;
+
+  @override
+  State<_WindowLayoutBuilder> createState() => _WindowLayoutBuilderState();
+}
+
+class _WindowLayoutBuilderState extends State<_WindowLayoutBuilder> {
   /// Where this widget sat in the window when it was last measured.
   var _origin = Offset.zero;
-
-  /// Whether a fold was in the window at the last build.
-  var _hasDivision = false;
 
   /// The position of the nearest [Scrollable], which moves this widget without
   /// rebuilding or resizing it.
@@ -73,26 +145,24 @@ class _FoldSplitViewState extends State<FoldSplitView> {
 
     final scrollPosition = Scrollable.maybeOf(context)?.position;
     if (scrollPosition != _scrollPosition) {
-      _scrollPosition?.removeListener(_scheduleSync);
-      _scrollPosition = scrollPosition?..addListener(_scheduleSync);
+      _scrollPosition?.removeListener(_scheduleOriginUpdate);
+      _scrollPosition = scrollPosition?..addListener(_scheduleOriginUpdate);
     }
   }
 
   @override
   void dispose() {
-    _scrollPosition?.removeListener(_scheduleSync);
+    _scrollPosition?.removeListener(_scheduleOriginUpdate);
     super.dispose();
   }
 
-  /// Measures again after the frame in which a scroll moved this widget, as
-  /// long as there is a fold to follow.
-  void _scheduleSync() {
-    if (_hasDivision) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _syncOrigin());
+  void _scheduleOriginUpdate() {
+    if (widget.tracksOrigin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _updateOrigin());
     }
   }
 
-  void _syncOrigin() {
+  void _updateOrigin() {
     if (!mounted) {
       return;
     }
@@ -109,59 +179,37 @@ class _FoldSplitViewState extends State<FoldSplitView> {
   }
 
   @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      _scheduleOriginUpdate();
+
+      return widget.builder(context, _origin, constraints.biggest);
+    },
+  );
+}
+
+/// Lays [first] and [second] out on either side of [fold] in a [FoldSplitView]
+/// of [size], leaving the fold empty.
+class _SplitPanes extends StatelessWidget {
+  const _SplitPanes({
+    required this.size,
+    required this.fold,
+    required this.axis,
+    required this.first,
+    required this.second,
+  });
+
+  final Size size;
+  final Rect fold;
+  final Axis axis;
+  final Widget first;
+  final Widget second;
+
+  @override
   Widget build(BuildContext context) {
-    final division = FoldGeometry.of(context).division;
-    _hasDivision = division != null;
+    final mediaQuery = MediaQuery.of(context);
+    final bounds = Offset.zero & size;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (division != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _syncOrigin());
-        }
-
-        final bounds = Offset.zero & constraints.biggest;
-        final localFold = division?.bounds.shift(-_origin);
-        final first = KeyedSubtree(key: _firstKey, child: widget.first);
-        final second = KeyedSubtree(key: _secondKey, child: widget.second);
-
-        return switch ((division?.axis, localFold)) {
-          (final axis?, final fold?)
-              when bounds.isFinite &&
-                  fold.overlaps(bounds) &&
-                  _hasRoomOnBothSides(fold: fold, bounds: bounds, axis: axis) =>
-            _buildSplit(
-              context,
-              bounds: bounds,
-              fold: fold.intersect(bounds),
-              axis: axis,
-              first: first,
-              second: second,
-            ),
-          _ => widget.unfoldedBuilder(context, first, second),
-        };
-      },
-    );
-  }
-
-  /// Whether [fold] leaves room for a pane on both of its sides within
-  /// [bounds], rather than lying at or past an edge of [bounds].
-  static bool _hasRoomOnBothSides({
-    required Rect fold,
-    required Rect bounds,
-    required Axis axis,
-  }) => switch (axis) {
-    Axis.vertical => fold.left > bounds.left && fold.right < bounds.right,
-    Axis.horizontal => fold.top > bounds.top && fold.bottom < bounds.bottom,
-  };
-
-  Widget _buildSplit(
-    BuildContext context, {
-    required Rect bounds,
-    required Rect fold,
-    required Axis axis,
-    required Widget first,
-    required Widget second,
-  }) {
     final (leading, trailing) = switch (axis) {
       Axis.vertical => (
         Rect.fromLTRB(bounds.left, bounds.top, fold.left, bounds.bottom),
@@ -182,16 +230,16 @@ class _FoldSplitViewState extends State<FoldSplitView> {
 
     return Stack(
       children: [
-        _buildPane(context, pane: firstRect, bounds: bounds, child: first),
-        _buildPane(context, pane: secondRect, bounds: bounds, child: second),
+        _buildPane(mediaQuery, pane: firstRect, bounds: bounds, child: first),
+        _buildPane(mediaQuery, pane: secondRect, bounds: bounds, child: second),
       ],
     );
   }
 
   /// Keeps the padding and the view insets, such as the keyboard, only on the
-  /// edges of this widget the pane touches.
+  /// edges of [bounds] the pane touches.
   Widget _buildPane(
-    BuildContext context, {
+    MediaQueryData mediaQuery, {
     required Rect pane,
     required Rect bounds,
     required Widget child,
@@ -204,7 +252,7 @@ class _FoldSplitViewState extends State<FoldSplitView> {
     return Positioned.fromRect(
       rect: pane,
       child: MediaQuery(
-        data: MediaQuery.of(context)
+        data: mediaQuery
             .removePadding(
               removeLeft: removeLeft,
               removeTop: removeTop,
