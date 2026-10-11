@@ -17,6 +17,3 @@ build/
 /doc/imgs/*
 !/doc/imgs/hero.gif
 !/doc/imgs/geometry.png
-
-# Overrides for working on the package, not for its users.
-/pubspec_overrides.yaml

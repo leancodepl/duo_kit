@@ -73,6 +73,6 @@ On iPhone Duo, build with the iOS 27.1 SDK and raise the deployment target to
 iOS 15.0, in the Runner target and in your pods, as the
 [iPhone Duo setup][setup] describes.
 
-[main]: https://github.com/leancodepl/duo_kit/blob/main/example/lib/main.dart
-[closed-fold-occlusions]: https://github.com/leancodepl/duo_kit/blob/main/example/lib/closed_fold_occlusions.dart
-[setup]: https://github.com/leancodepl/duo_kit#iphone-duo-setup
+[main]: https://github.com/leancodepl/duo_kit/blob/main/packages/duo_kit/example/lib/main.dart
+[closed-fold-occlusions]: https://github.com/leancodepl/duo_kit/blob/main/packages/duo_kit/example/lib/closed_fold_occlusions.dart
+[setup]: https://github.com/leancodepl/duo_kit/tree/main/packages/duo_kit#iphone-duo-setup

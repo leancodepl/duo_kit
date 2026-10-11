@@ -1,4 +1,4 @@
-include: package:leancode_lint/analysis_options_package.yaml
-
+# In a pub workspace, analyzer plugins can only be enabled here. Each package
+# includes its own rules.
 plugins:
   leancode_lint: ^21.0.0

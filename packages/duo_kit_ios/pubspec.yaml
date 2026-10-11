@@ -1,0 +1,28 @@
+name: duo_kit_ios
+description: 'The iOS side of duo_kit: what iPhone Duo reports natively, such as the vertical bar, the hinge and the reserved regions of the window, published to Flutter.'
+version: 0.0.1
+publish_to: none
+homepage: https://github.com/leancodepl/duo_kit
+repository: https://github.com/leancodepl/duo_kit/tree/main/packages/duo_kit_ios
+issue_tracker: https://github.com/leancodepl/duo_kit/issues
+resolution: workspace
+
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: '>=3.41.0'
+
+dependencies:
+  duo_kit: ^0.1.0
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  leancode_lint: ^21.0.0
+
+flutter:
+  plugin:
+    platforms:
+      ios:
+        pluginClass: DuoKitIosPlugin
