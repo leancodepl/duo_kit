@@ -91,17 +91,37 @@ void main() {
       expect(geometry.availableWidth, 867);
     });
 
-    test('puts the strip on the left for an inset on the left only', () {
-      final geometry = FoldGeometry.fromMediaQuery(_leftStripData);
+    test('puts the strip on the left of the cover display in landscape', () {
+      final geometry = FoldGeometry.fromMediaQuery(
+        FoldTestPose.duoCoverLandscapeLeft.data,
+      );
 
-      expect(geometry.strip?.side, FoldStripSide.left);
-      expect(geometry.strip?.rect, const Rect.fromLTWH(0, 0, 84, 669));
-      expect(geometry.availableWidth, 867);
+      expect(
+        geometry.strip,
+        const FoldStrip(
+          side: FoldStripSide.left,
+          rect: Rect.fromLTWH(0, 0, 84, 466),
+          topClearance: 82,
+          bottomClearance: 0,
+          isClearanceEstimated: false,
+        ),
+      );
+      expect(geometry.availableWidth, 594);
+    });
+
+    test('clears the status cluster at the bottom of the strip', () {
+      final geometry = FoldGeometry.fromMediaQuery(
+        FoldTestPose.duoCoverLandscapeRight.data,
+      );
+
+      expect(geometry.strip?.side, FoldStripSide.right);
+      expect(geometry.strip?.topClearance, 0);
+      expect(geometry.strip?.bottomClearance, 82);
     });
 
     test('finds no strip with insets on both sides', () {
       final geometry = FoldGeometry.fromMediaQuery(
-        _leftStripData.copyWith(
+        FoldTestPose.duoCoverLandscapeLeft.data.copyWith(
           viewPadding: const EdgeInsets.only(left: 84, right: 84, bottom: 34),
         ),
       );
@@ -349,13 +369,6 @@ void main() {
     });
   });
 }
-
-/// A window with a strip on the left, as iPhone Duo gives the app on the left
-/// of Split View. Not measured.
-const _leftStripData = MediaQueryData(
-  size: Size(951, 669),
-  viewPadding: EdgeInsets.only(left: 84, bottom: 34),
-);
 
 MediaQueryData _withCutouts(MediaQueryData data, List<Rect> cutouts) =>
     data.copyWith(

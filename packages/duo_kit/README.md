@@ -8,12 +8,12 @@
 
 [![duo_kit pub.dev badge][pub-badge]][pub-badge-link]
 
-Layouts for foldables such as iPhone Duo.
+Flutter layouts for iPhone Duo and other foldables.
 
-duo_kit works out where the system keeps room in the window – the strip for
-its controls, the fold, the camera and the status cluster – and places your
-widgets around it. It draws nothing itself and has no opinion on how your app
-looks: the navigation, the panes and the dialogs are your own widgets.
+On iPhone Duo, `FoldScaffold` moves your navigation into the strip at the side
+of the window, and `FoldSplitView` puts a list and its details on either side
+of the fold when the device opens like a book. duo_kit only places widgets: the
+navigation and the panes are your own, in whatever design your app has.
 
 ![The example app on iPhone Duo: as the device opens like a book, the list and its details move to either side of the fold, and back when it lies flat][hero-img]
 
@@ -32,11 +32,29 @@ looks: the navigation, the panes and the dialogs are your own widgets.
   over your app.
 - **Test poses** – the window metrics of every iPhone Duo pose, for widget and
   golden tests.
+- **iOS bridge** – [`duo_kit_ios`][duo-kit-ios] publishes the fold, the camera
+  and the status cluster of iPhone Duo, and reports its hinge and the edge of
+  its vertical bar. duo_kit works without it, with any source of the display
+  features.
+
+## duo_kit or adaptive_platform_ui
+
+[`adaptive_platform_ui`][adaptive-platform-ui] gives your app the platform's
+own widgets: native UIKit toolbars and tab bars with Liquid Glass on iOS 26,
+Cupertino on older iOS and Material on Android. On iPhone Duo it lays out its
+own toolbar in the strip. Pick it if your app should look like the platform.
+
+duo_kit draws nothing. It lays out the widgets you already have, in your own
+design, and handles the rest of the foldable: two panes split at the fold and
+dialogs that open in one half. It suits apps with a look of their own, or
+Material apps on iOS.
 
 ## Installation
 
 ```sh
 flutter pub add duo_kit
+# On iPhone Duo, for the fold, the camera and the status cluster:
+flutter pub add duo_kit_ios
 ```
 
 ## Where the geometry comes from
@@ -44,22 +62,23 @@ flutter pub add duo_kit
 duo_kit reads only `MediaQuery.viewPadding` and `MediaQuery.displayFeatures`:
 
 - **Android** – Flutter fills the display features of a foldable by itself.
-- **iOS** – nothing fills them yet. Publish the fold and the camera with a
-  plugin that reads the reserved regions of the window, such as
-  [`foldable`][foldable] with `DisplayFeatureBridgeMode.full`:
+- **iOS** – nothing fills them yet. Publish them with
+  [`duo_kit_ios`][duo-kit-ios], placed above your app so that overlays outside
+  the navigator see the fold too:
 
   ```dart
-  FoldableProvider(
-    bridgeMode: DisplayFeatureBridgeMode.full,
-    child: app,
-  )
+  runApp(const DuoKitIos(child: MyApp()));
   ```
 
-  Place it above your app, so that overlays outside the navigator see the fold
-  too. While the device is closed, `foldable` publishes nothing; to keep the
-  strip of the cover display clear of the status cluster, add its occlusions
-  yourself, as [`ClosedFoldOcclusions`][closed-fold-occlusions] in the example
-  does.
+  It publishes the fold as soon as the hinge is partly open, and the camera and
+  the status cluster in every pose, the closed device included.
+
+  Any other source of the display features works too, such as
+  [`foldable`][foldable] with `DisplayFeatureBridgeMode.full`. While the device
+  is closed, `foldable` publishes nothing; to keep the strip of the cover
+  display clear of the status cluster, add its occlusions yourself, as
+  [`ClosedFoldOcclusions`][closed-fold-occlusions] did in an earlier version of
+  the example.
 
   With the fold published, Flutter keeps dialogs, sheets and pickers on one side
   of it while the device is half open, as it does on Android.
@@ -103,8 +122,9 @@ pose and keeps its state.
 ![The navigation in the strip of the cover display, below the status cluster, and along the bottom edge of the inner display in portrait][navigation-img]
 
 In a strip, `placement` is `left` or `right`, the side the strip runs along. On
-iPhone Duo it is `right`. Put whatever faces the content, such as a divider or a
-selection indicator, on the edge towards the body.
+iPhone Duo it is `left` only on the cover display in landscape, with the camera
+on the left. Put whatever faces the content, such as a divider or a selection
+indicator, on the edge towards the body.
 
 ### Two panes
 
@@ -205,7 +225,7 @@ MediaQuery(data: FoldTestPose.duoHalfOpenedLandscape.data, child: screen)
   and catches up one frame later.
 - With `foldable`, the fold reaches the display features about a second after
   the device comes to rest half open, since the reserved regions follow the
-  hinge with a delay.
+  hinge with a delay. `duo_kit_ios` follows the hinge itself.
 - Tested on the iPhone Duo simulator. Android foldables follow from the same
   display features, but have not been tested on a device.
 
@@ -246,7 +266,9 @@ We are **top-tier experts** focused on Flutter Enterprise solutions.
 [geometry-img]: https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/packages/duo_kit/doc/imgs/geometry.png
 [foldable]: https://pub.dev/packages/foldable
 [hig-duo]: https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo
-[closed-fold-occlusions]: https://github.com/leancodepl/duo_kit/blob/main/packages/duo_kit/example/lib/closed_fold_occlusions.dart
+[closed-fold-occlusions]: https://github.com/leancodepl/duo_kit/blob/11b850edb479d5256d59dbe96df672d0e36dd38f/packages/duo_kit/example/lib/closed_fold_occlusions.dart
+[duo-kit-ios]: https://pub.dev/packages/duo_kit_ios
+[adaptive-platform-ui]: https://pub.dev/packages/adaptive_platform_ui
 [leancode-landing]: https://leancode.co/?utm_source=github.com&utm_medium=referral&utm_campaign=duo-kit
 [leancode-estimate]: https://leancode.co/get-estimate?utm_source=github.com&utm_medium=referral&utm_campaign=duo-kit
 [leancode-packages]: https://pub.dev/packages?q=publisher%3Aleancode.co&sort=downloads

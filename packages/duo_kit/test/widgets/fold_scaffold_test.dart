@@ -68,18 +68,25 @@ void main() {
   testWidgets('puts the navigation in a strip on the left', variant: _ios, (
     tester,
   ) async {
-    final placements = await _pumpScaffold(tester, _leftStripData);
+    final placements = await _pumpScaffold(
+      tester,
+      FoldTestPose.duoCoverLandscapeLeft.data,
+    );
 
     expect(placements.last, FoldNavigationPlacement.left);
     expect(
       tester.getRect(find.byKey(_navigationKey)),
-      const Rect.fromLTRB(0, 0, 84, 669),
+      const Rect.fromLTRB(0, 0, 84, 466),
     );
     expect(
       tester.getRect(find.byKey(_bodyKey)),
-      const Rect.fromLTRB(84, 0, 951, 669),
+      const Rect.fromLTRB(84, 0, 678, 466),
     );
     expect(_getPaddingOf(tester, _bodyKey), const EdgeInsets.only(bottom: 34));
+    expect(
+      _getPaddingOf(tester, _navigationKey),
+      const EdgeInsets.only(top: 82, bottom: 34),
+    );
   });
 
   testWidgets('keeps the body state when the navigation moves', variant: _ios, (
@@ -149,14 +156,6 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
 
   return placements;
 }
-
-/// A window with a strip on the left, as iPhone Duo gives the app on the left
-/// of Split View. Not measured.
-const _leftStripData = MediaQueryData(
-  size: Size(951, 669),
-  padding: EdgeInsets.only(left: 84, bottom: 34),
-  viewPadding: EdgeInsets.only(left: 84, bottom: 34),
-);
 
 EdgeInsets _getPaddingOf(WidgetTester tester, Key key) =>
     MediaQuery.paddingOf(tester.element(find.byKey(key)));

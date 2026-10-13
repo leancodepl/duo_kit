@@ -9,9 +9,8 @@ enum FoldNavigationPlacement {
   /// Along the bottom edge of the window.
   bottom,
 
-  /// In the strip the system keeps along the left edge.
-  ///
-  /// iPhone Duo keeps its strip on the right; see [FoldStrip].
+  /// In the strip the system keeps along the left edge, as on the cover
+  /// display of iPhone Duo in landscape with the camera on the left.
   left,
 
   /// In the strip the system keeps along the right edge.

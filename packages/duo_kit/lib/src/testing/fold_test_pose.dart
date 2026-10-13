@@ -11,20 +11,31 @@ const _stripWidth = 84.0;
 const _homeIndicatorHeight = 34.0;
 const _innerPortraitTopInset = 82.0;
 const _coverStatusClusterHeight = 170.0;
+const _coverLandscapeStatusClusterHeight = 82.0;
 const _innerLandscapeStatusClusterHeight = 120.0;
 const _innerPortraitStatusClusterWidth = 134.0;
 const _foldThickness = 40.0;
+
+/// The camera of the cover display, a square this far from the corner it sits
+/// in.
+const _cameraInset = 29.3;
+const _cameraSize = 37.0;
 
 /// Where the fold starts, measured from the top or left edge of the inner
 /// display.
 const _foldOffset = 455.5;
 
 const _coverSize = Size(_coverWidth, _coverHeight);
+const _coverLandscapeSize = Size(_coverHeight, _coverWidth);
 const _innerLandscapeSize = Size(_innerLongSide, _innerShortSide);
 const _innerPortraitSize = Size(_innerShortSide, _innerLongSide);
 
 const _rightStripPadding = EdgeInsets.only(
   right: _stripWidth,
+  bottom: _homeIndicatorHeight,
+);
+const _leftStripPadding = EdgeInsets.only(
+  left: _stripWidth,
   bottom: _homeIndicatorHeight,
 );
 const _innerPortraitPadding = EdgeInsets.only(
@@ -33,7 +44,12 @@ const _innerPortraitPadding = EdgeInsets.only(
 );
 
 const _coverCamera = DisplayFeature(
-  bounds: Rect.fromLTRB(399.7, 29.3, 436.7, 66.3),
+  bounds: Rect.fromLTWH(
+    _coverWidth - _cameraInset - _cameraSize,
+    _cameraInset,
+    _cameraSize,
+    _cameraSize,
+  ),
   type: DisplayFeatureType.cutout,
   state: DisplayFeatureState.unknown,
 );
@@ -43,6 +59,36 @@ const _coverStatusCluster = DisplayFeature(
     0,
     _coverWidth,
     _coverStatusClusterHeight,
+  ),
+  type: DisplayFeatureType.cutout,
+  state: DisplayFeatureState.unknown,
+);
+const _coverLandscapeLeftCamera = DisplayFeature(
+  bounds: Rect.fromLTWH(_cameraInset, _cameraInset, _cameraSize, _cameraSize),
+  type: DisplayFeatureType.cutout,
+  state: DisplayFeatureState.unknown,
+);
+const _coverLandscapeLeftStatusCluster = DisplayFeature(
+  bounds: Rect.fromLTRB(0, 0, _stripWidth, _coverLandscapeStatusClusterHeight),
+  type: DisplayFeatureType.cutout,
+  state: DisplayFeatureState.unknown,
+);
+const _coverLandscapeRightCamera = DisplayFeature(
+  bounds: Rect.fromLTWH(
+    _coverHeight - _cameraInset - _cameraSize,
+    _coverWidth - _cameraInset - _cameraSize,
+    _cameraSize,
+    _cameraSize,
+  ),
+  type: DisplayFeatureType.cutout,
+  state: DisplayFeatureState.unknown,
+);
+const _coverLandscapeRightStatusCluster = DisplayFeature(
+  bounds: Rect.fromLTRB(
+    _coverHeight - _stripWidth,
+    _coverWidth - _coverLandscapeStatusClusterHeight,
+    _coverHeight,
+    _coverWidth,
   ),
   type: DisplayFeatureType.cutout,
   state: DisplayFeatureState.unknown,
@@ -86,11 +132,14 @@ const _portraitFold = DisplayFeature(
 /// as cutouts, and the fold only while the device is half open.
 ///
 /// The inner display has one landscape pose: in both landscape rotations the
-/// system keeps the strip and the status cluster on the right.
+/// system keeps the strip and the status cluster on the right. On the cover
+/// display the strip follows the camera, so it has a landscape pose for each
+/// side.
 enum FoldTestPose {
-  /// The cover display of the closed device, with no display features.
+  /// The cover display of the closed device, with no display features, as
+  /// Flutter reports it without a bridge.
   ///
-  /// The bridge publishes nothing while the device is closed.
+  /// [duoCoverWithOcclusions] is what a bridge such as duo_kit_ios reports.
   duoCover(
     MediaQueryData(
       size: _coverSize,
@@ -107,6 +156,34 @@ enum FoldTestPose {
       padding: _rightStripPadding,
       viewPadding: _rightStripPadding,
       displayFeatures: [_coverCamera, _coverStatusCluster],
+    ),
+  ),
+
+  /// The cover display in landscape with the camera on the left, where the
+  /// strip and the status cluster move to the left edge.
+  duoCoverLandscapeLeft(
+    MediaQueryData(
+      size: _coverLandscapeSize,
+      padding: _leftStripPadding,
+      viewPadding: _leftStripPadding,
+      displayFeatures: [
+        _coverLandscapeLeftCamera,
+        _coverLandscapeLeftStatusCluster,
+      ],
+    ),
+  ),
+
+  /// The cover display in landscape with the camera on the right, where the
+  /// status cluster sits at the bottom of the strip.
+  duoCoverLandscapeRight(
+    MediaQueryData(
+      size: _coverLandscapeSize,
+      padding: _rightStripPadding,
+      viewPadding: _rightStripPadding,
+      displayFeatures: [
+        _coverLandscapeRightCamera,
+        _coverLandscapeRightStatusCluster,
+      ],
     ),
   ),
 

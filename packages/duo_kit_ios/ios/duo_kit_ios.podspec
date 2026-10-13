@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'duo_kit_ios'
-  s.version          = '0.0.1'
+  s.version          = '0.1.0'
   s.summary          = 'The iOS side of duo_kit.'
   s.description      = <<-DESC
 Publishes what iPhone Duo reports natively, such as the vertical bar, the hinge
