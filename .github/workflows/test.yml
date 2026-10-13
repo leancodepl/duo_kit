@@ -1,0 +1,83 @@
+name: test
+
+on:
+  push:
+    branches: [ main ]
+    tags-ignore: ['*-v*']
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.package }} on Flutter ${{ matrix.version }}
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [duo_kit, duo_kit_ios]
+        version: ['3.41.x']
+
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.version }}
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.FLUTTER_HOME }}/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      # Resolves the whole pub workspace, both packages and the example.
+      - name: Download pub dependencies
+        run: flutter pub get
+
+      # Covers the example app too, which lives in packages/duo_kit.
+      - name: Run analyzer
+        run: flutter analyze
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Dry run pub publish
+        # We don't want it to fail the CI, it's just to see how would `pub publish` behave.
+        run: dart pub publish --dry-run || true
+
+  pana-score:
+    name: pana score of ${{ matrix.package }}
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [duo_kit, duo_kit_ios]
+
+    permissions:
+      contents: read
+      statuses: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Score with pana
+        continue-on-error: true
+        uses: leancodepl/mobile-tools/.github/actions/pana-score@e9f138c252f8e2254c88273367958fcc6bb39cad # pana-score-v1.3
+        with:
+          path: packages/${{ matrix.package }}
