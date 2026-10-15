@@ -1,8 +1,9 @@
 import 'package:duo_kit/debug.dart';
 import 'package:duo_kit/duo_kit.dart';
-import 'package:duo_kit_ios/duo_kit_ios.dart';
+import 'package:duo_kit_example/closed_fold_occlusions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:foldable/foldable.dart';
 
 void main() => runApp(const ExampleApp());
 
@@ -112,7 +113,12 @@ class ExampleApp extends StatelessWidget {
     );
 
     // On iOS the fold reaches the display features only through a bridge.
-    return DuoKitIos(child: kDebugMode ? FoldDebugTools(child: app) : app);
+    return FoldableProvider(
+      bridgeMode: DisplayFeatureBridgeMode.full,
+      child: ClosedFoldOcclusions(
+        child: kDebugMode ? FoldDebugTools(child: app) : app,
+      ),
+    );
   }
 }
 

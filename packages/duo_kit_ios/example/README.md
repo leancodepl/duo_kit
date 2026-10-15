@@ -1,8 +1,9 @@
 # duo_kit_ios example
 
-The [duo_kit example][example] runs with duo_kit_ios. It wraps the app in
-`DuoKitIos`, and duo_kit lays it out around the fold, the camera and the status
-cluster that the plugin publishes:
+To run the [duo_kit example][example] with duo_kit_ios, wrap its app in
+`DuoKitIos` in place of `FoldableProvider` and `ClosedFoldOcclusions`. duo_kit
+then lays it out around the fold, the camera and the status cluster that the
+plugin publishes:
 
 ```dart
 @override

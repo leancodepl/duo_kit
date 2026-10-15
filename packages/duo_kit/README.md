@@ -32,10 +32,6 @@ navigation and the panes are your own, in whatever design your app has.
   over your app.
 - **Test poses** – the window metrics of every iPhone Duo pose, for widget and
   golden tests.
-- **iOS bridge** – [`duo_kit_ios`][duo-kit-ios] publishes the fold, the camera
-  and the status cluster of iPhone Duo, and reports its hinge and the edge of
-  its vertical bar. duo_kit works without it, with any source of the display
-  features.
 
 ## duo_kit or adaptive_platform_ui
 
@@ -53,8 +49,6 @@ Material apps on iOS.
 
 ```sh
 flutter pub add duo_kit
-# On iPhone Duo, for the fold, the camera and the status cluster:
-flutter pub add duo_kit_ios
 ```
 
 ## Where the geometry comes from
@@ -62,23 +56,25 @@ flutter pub add duo_kit_ios
 duo_kit reads only `MediaQuery.viewPadding` and `MediaQuery.displayFeatures`:
 
 - **Android** – Flutter fills the display features of a foldable by itself.
-- **iOS** – nothing fills them yet. Publish them with
-  [`duo_kit_ios`][duo-kit-ios], placed above your app so that overlays outside
-  the navigator see the fold too:
+- **iOS** – nothing fills them yet. Publish the fold and the camera with a
+  plugin that reads the reserved regions of the window, such as
+  [`foldable`][foldable] with `DisplayFeatureBridgeMode.full`:
 
   ```dart
-  runApp(const DuoKitIos(child: MyApp()));
+  FoldableProvider(
+    bridgeMode: DisplayFeatureBridgeMode.full,
+    child: app,
+  )
   ```
 
-  It publishes the fold as soon as the hinge is partly open, and the camera and
-  the status cluster in every pose, the closed device included.
+  Place it above your app, so that overlays outside the navigator see the fold
+  too. While the device is closed, `foldable` publishes nothing; to keep the
+  strip of the cover display clear of the status cluster, add its occlusions
+  yourself, as [`ClosedFoldOcclusions`][closed-fold-occlusions] in the example
+  does.
 
-  Any other source of the display features works too, such as
-  [`foldable`][foldable] with `DisplayFeatureBridgeMode.full`. While the device
-  is closed, `foldable` publishes nothing; to keep the strip of the cover
-  display clear of the status cluster, add its occlusions yourself, as
-  [`ClosedFoldOcclusions`][closed-fold-occlusions] did in an earlier version of
-  the example.
+  [`duo_kit_ios`][duo-kit-ios], in development in the same repository, will
+  publish all of them natively, the closed device included.
 
   With the fold published, Flutter keeps dialogs, sheets and pickers on one side
   of it while the device is half open, as it does on Android.
@@ -225,7 +221,7 @@ MediaQuery(data: FoldTestPose.duoHalfOpenedLandscape.data, child: screen)
   and catches up one frame later.
 - With `foldable`, the fold reaches the display features about a second after
   the device comes to rest half open, since the reserved regions follow the
-  hinge with a delay. `duo_kit_ios` follows the hinge itself.
+  hinge with a delay.
 - Tested on the iPhone Duo simulator. Android foldables follow from the same
   display features, but have not been tested on a device.
 
@@ -266,8 +262,8 @@ We are **top-tier experts** focused on Flutter Enterprise solutions.
 [geometry-img]: https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/packages/duo_kit/doc/imgs/geometry.png
 [foldable]: https://pub.dev/packages/foldable
 [hig-duo]: https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo
-[closed-fold-occlusions]: https://github.com/leancodepl/duo_kit/blob/11b850edb479d5256d59dbe96df672d0e36dd38f/packages/duo_kit/example/lib/closed_fold_occlusions.dart
-[duo-kit-ios]: https://pub.dev/packages/duo_kit_ios
+[closed-fold-occlusions]: https://github.com/leancodepl/duo_kit/blob/main/packages/duo_kit/example/lib/closed_fold_occlusions.dart
+[duo-kit-ios]: https://github.com/leancodepl/duo_kit/tree/main/packages/duo_kit_ios
 [adaptive-platform-ui]: https://pub.dev/packages/adaptive_platform_ui
 [leancode-landing]: https://leancode.co/?utm_source=github.com&utm_medium=referral&utm_campaign=duo-kit
 [leancode-estimate]: https://leancode.co/get-estimate?utm_source=github.com&utm_medium=referral&utm_campaign=duo-kit

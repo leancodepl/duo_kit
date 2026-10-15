@@ -20,7 +20,7 @@ navigation and the panes are your own, in whatever design your app has.
 | Package | Version | |
 |---|---|---|
 | [`duo_kit`](packages/duo_kit) | [![duo_kit pub.dev badge][pub-badge]][pub-badge-link] | Fold geometry, a scaffold, a split view and anchors for dialogs. Pure Flutter. |
-| [`duo_kit_ios`](packages/duo_kit_ios) | [![duo_kit_ios pub.dev badge][pub-badge-ios]][pub-badge-ios-link] | The iOS side: the fold, the camera, the status cluster, the hinge and the vertical bar of iPhone Duo, published to Flutter. |
+| [`duo_kit_ios`](packages/duo_kit_ios) | In development | The iOS side: the fold, the camera, the status cluster, the hinge and the vertical bar of iPhone Duo, published to Flutter. |
 
 Start with the [duo_kit README](packages/duo_kit), which covers the setup for
 iPhone Duo and every widget.
@@ -69,8 +69,6 @@ We are **top-tier experts** focused on Flutter Enterprise solutions.
 [hero-img]: https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/packages/duo_kit/doc/imgs/hero.gif
 [pub-badge]: https://img.shields.io/pub/v/duo_kit
 [pub-badge-link]: https://pub.dev/packages/duo_kit
-[pub-badge-ios]: https://img.shields.io/pub/v/duo_kit_ios
-[pub-badge-ios-link]: https://pub.dev/packages/duo_kit_ios
 [leancode-landing]: https://leancode.co/?utm_source=github.com&utm_medium=referral&utm_campaign=duo-kit
 [patrol-landing]: https://patrol.leancode.co/?utm_source=github.com&utm_medium=referral&utm_campaign=duo-kit
 [leancode-estimate]: https://leancode.co/get-estimate?utm_source=github.com&utm_medium=referral&utm_campaign=duo-kit

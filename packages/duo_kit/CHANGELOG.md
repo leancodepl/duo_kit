@@ -1,3 +1,7 @@
+## 0.1.1
+
+- The README and the example publish the fold on iOS with `foldable`.
+
 ## 0.1.0
 
 - Initial release: `FoldGeometry`, `FoldScaffold`, `FoldSplitView` and `FoldAnchor`.

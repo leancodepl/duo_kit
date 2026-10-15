@@ -1,9 +1,9 @@
 # duo_kit_ios
 
-[![duo_kit_ios pub.dev badge][pub-badge]][pub-badge-link]
-
 The iOS side of [duo_kit][duo-kit]: what iPhone Duo reports natively, published
 to Flutter.
+
+**In development, not on pub.dev yet.**
 
 duo_kit lays your widgets out around the strip, the fold and the occlusions of
 the window, which it reads from `MediaQuery`. On iOS nothing puts the fold or
@@ -105,8 +105,6 @@ We are **top-tier experts** focused on Flutter Enterprise solutions.
 
 </div>
 
-[pub-badge]: https://img.shields.io/pub/v/duo_kit_ios
-[pub-badge-link]: https://pub.dev/packages/duo_kit_ios
 [duo-kit]: https://pub.dev/packages/duo_kit
 [setup]: https://pub.dev/packages/duo_kit#iphone-duo-setup
 [foldable]: https://pub.dev/packages/foldable

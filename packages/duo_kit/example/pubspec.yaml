@@ -10,11 +10,10 @@ environment:
 dependencies:
   duo_kit:
     path: ../
-  # Publishes the fold, the camera and the status cluster of iPhone Duo.
-  duo_kit_ios:
-    path: ../../duo_kit_ios
   flutter:
     sdk: flutter
+  # Publishes the fold and the camera of iPhone Duo to the display features.
+  foldable: ^1.0.5
 
 dev_dependencies:
   leancode_lint: ^21.0.0

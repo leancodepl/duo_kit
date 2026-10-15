@@ -7,9 +7,14 @@ open in one half of a split window.
 The parts of [`lib/main.dart`][main] that use duo_kit, trimmed:
 
 ```dart
-// On iOS, duo_kit_ios publishes the fold, the camera and the status cluster to
-// MediaQuery. In a debug build, FoldDebugTools simulates a fold on any device.
-DuoKitIos(child: kDebugMode ? FoldDebugTools(child: app) : app)
+// On iOS, a bridge publishes the fold and the camera to MediaQuery. In a debug
+// build, FoldDebugTools simulates a fold on any device.
+FoldableProvider(
+  bridgeMode: DisplayFeatureBridgeMode.full,
+  child: ClosedFoldOcclusions(
+    child: kDebugMode ? FoldDebugTools(child: app) : app,
+  ),
+)
 ```
 
 ```dart
@@ -52,6 +57,9 @@ showGeneralDialog<void>(
 )
 ```
 
+[`ClosedFoldOcclusions`][closed-fold-occlusions] publishes the camera and the
+status cluster of the closed device, which the bridge leaves out.
+
 ## Running it
 
 Add the platforms you want to run it on, then run it:
@@ -66,4 +74,5 @@ iOS 15.0, in the Runner target and in your pods, as the
 [iPhone Duo setup][setup] describes.
 
 [main]: https://github.com/leancodepl/duo_kit/blob/main/packages/duo_kit/example/lib/main.dart
+[closed-fold-occlusions]: https://github.com/leancodepl/duo_kit/blob/main/packages/duo_kit/example/lib/closed_fold_occlusions.dart
 [setup]: https://github.com/leancodepl/duo_kit/tree/main/packages/duo_kit#iphone-duo-setup

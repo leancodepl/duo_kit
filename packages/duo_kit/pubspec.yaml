@@ -1,6 +1,6 @@
 name: duo_kit
 description: 'iPhone Duo and foldable layouts for Flutter: navigation in the strip, a split view across the fold and dialogs in one half, around your own widgets.'
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/leancodepl/duo_kit
 repository: https://github.com/leancodepl/duo_kit/tree/main/packages/duo_kit
 issue_tracker: https://github.com/leancodepl/duo_kit/issues
