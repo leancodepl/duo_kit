@@ -31,17 +31,27 @@ FoldScaffold(
 ```
 
 ```dart
-// The list and its details on either side of the fold, in a row otherwise.
+// The list and its details on either side of the fold. Without a fold, in a
+// row where both fit, and the list alone otherwise, with the details kept
+// offstage so that neither pane loses its state at the breakpoint.
 FoldSplitView(
   first: list,
   second: _SessionDetails(session: _sessions[_selected]),
-  unfoldedBuilder: (context, first, second) => Row(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      SizedBox(width: _sidePaneWidth, child: first),
-      Expanded(child: second),
-    ],
-  ),
+  unfoldedBuilder: (context, first, second) => isWide
+      ? Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(width: _sidePaneWidth, child: first),
+            Expanded(child: second),
+          ],
+        )
+      : Stack(
+          fit: StackFit.expand,
+          children: [
+            first,
+            Offstage(child: TickerMode(enabled: false, child: second)),
+          ],
+        ),
 )
 ```
 
