@@ -31,7 +31,7 @@ void main() {
       expect(_getPaddingOf(tester, _bodyKey), const EdgeInsets.only(top: 82));
       expect(
         _getPaddingOf(tester, _navigationKey),
-        const EdgeInsets.only(top: 82, bottom: 34),
+        const EdgeInsets.only(bottom: 34),
       );
     },
   );

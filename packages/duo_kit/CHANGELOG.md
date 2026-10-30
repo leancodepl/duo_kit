@@ -1,3 +1,7 @@
+## 0.1.2
+
+- `FoldScaffold` no longer gives a navigation along the bottom edge the top inset, so a `SafeArea` in it adds no space above it.
+
 ## 0.1.1
 
 - The README and the example publish the fold on iOS with `foldable`.

@@ -72,7 +72,7 @@ class FoldScaffold extends StatelessWidget {
     );
     final navigationData = switch (strip) {
       final strip? => _getStripData(mediaQuery, strip),
-      null => mediaQuery,
+      null => mediaQuery.removePadding(removeTop: true),
     };
 
     // The same children in every pose, so the body keeps its state when the

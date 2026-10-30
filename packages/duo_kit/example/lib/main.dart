@@ -194,7 +194,6 @@ class _NavigationBar extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(color: _surface, border: _getBorder()),
       child: SafeArea(
-        top: isVertical,
         child: Padding(
           padding: const EdgeInsets.all(_s8),
           child: isVertical
