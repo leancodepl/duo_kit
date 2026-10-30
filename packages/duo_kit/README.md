@@ -17,6 +17,36 @@ navigation and the panes are your own, in whatever design your app has.
 
 ![The example app on iPhone Duo: as the device opens like a book, the list and its details move to either side of the fold, and back when it lies flat][hero-img]
 
+## Why duo_kit
+
+Folding the device changes the window under a running app. duo_kit handles the
+parts of that which are easy to miss:
+
+- **State survives folding and unfolding.** Close the device, open it, fold it
+  half open: the body of `FoldScaffold` stays the same widget, and the panes of
+  `FoldSplitView` carry their state between the split and your own layout.
+  Scroll positions and text in fields come through every pose. A pane your
+  layout hides can keep its state too, see [Two panes](#two-panes).
+- **No double insets.** The navigation gets the padding of where it sits, the
+  camera and the status cluster included, so a plain `SafeArea` keeps it
+  clear. The body and each pane drop the insets of the edges they do not
+  touch, so nothing leaves a gap next to the navigation or the fold.
+- **The keyboard stays in its half.** Across a horizontal fold only the pane
+  below it makes room for the keyboard; the pane above stays as it is.
+- **Dialogs open in the right half.** With `FoldAnchor` an alert opens above a
+  horizontal fold and media controls below it. A dialog opened while the
+  device lies flat moves to its half once the device folds.
+- **Two panes anywhere in the tree.** `FoldSplitView` finds the fold from below
+  a top bar or on a page of a `PageView`, and follows it as the page scrolls.
+- **Look-alikes are ignored.** A fold at the edge of a window in Split View
+  splits nothing, the camera cutout of an Android phone in landscape is not
+  taken for a strip, and an occlusion left over from the previous pose is
+  dropped.
+- **Right-to-left languages.** The first pane and the dialogs move to the
+  other side.
+- **No iPhone Duo needed.** Switch poses on any device without losing the app
+  state, and test against window metrics measured on iPhone Duo.
+
 ## Features
 
 - **`FoldGeometry`** – the strip, the fold and the occlusions of the window,
@@ -91,9 +121,12 @@ duo_kit reads only `MediaQuery.viewPadding` and `MediaQuery.displayFeatures`:
 - **Target iOS 15.0 or later**, in the Runner target and in your pods. Xcode 27
   rejects lower deployment targets, and the Flutter 3.41 template still sets
   13.0.
-- **Do not lock the orientation on a device with a hinge.** iOS then scales the
-  app instead of laying it out, and reports no fold. On the simulator this
-  sticks to the bundle ID until the simulator reboots.
+- **Do not lock the orientation.** With `UIRequiresFullScreen` and portrait as
+  the only orientation in `Info.plist`, iOS scales the app into a portrait
+  window and reports no reserved regions, so no fold. On the simulator the
+  missing regions stay with the bundle ID after the lock is gone, until the
+  simulator reboots. A lock set with `SystemChrome.setPreferredOrientations`
+  keeps the fold but turns the UI on its side on the open device.
 
 ## Usage
 
