@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
-import 'package:duo_kit_ios/src/fold_hinge.dart';
-import 'package:duo_kit_ios/src/fold_vertical_bar_edge.dart';
+import 'package:duo_kit/src/bridge/fold_hinge.dart';
+import 'package:duo_kit/src/bridge/fold_vertical_bar_edge.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -48,7 +48,7 @@ class DuoKitIos extends StatefulWidget {
 }
 
 class _DuoKitIosState extends State<DuoKitIos> {
-  static const _channel = EventChannel('duo_kit_ios/state');
+  static const _channel = EventChannel('duo_kit/state');
 
   StreamSubscription<Object?>? _subscription;
   var _state = _NativeState.none;
@@ -67,7 +67,7 @@ class _DuoKitIosState extends State<DuoKitIos> {
           FlutterErrorDetails(
             exception: error,
             stack: stack,
-            library: 'duo_kit_ios',
+            library: 'duo_kit',
             context: ErrorDescription('while reading the native state'),
           ),
         ),

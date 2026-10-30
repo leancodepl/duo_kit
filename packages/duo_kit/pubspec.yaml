@@ -31,3 +31,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   leancode_lint: ^21.0.0
+
+flutter:
+  plugin:
+    platforms:
+      ios:
+        pluginClass: DuoKitPlugin

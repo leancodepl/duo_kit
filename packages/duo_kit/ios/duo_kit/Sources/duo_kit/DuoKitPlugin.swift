@@ -5,8 +5,8 @@ import UIKit
 ///
 /// Sends the hinge, the edge of the vertical bar and the reserved regions of
 /// the Flutter view over an event channel, each time one of them changes.
-public final class DuoKitIosPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
-  private static let channelName = "duo_kit_ios/state"
+public final class DuoKitPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
+  private static let channelName = "duo_kit/state"
   private static let viewRetryDelay = 0.25
 
   private weak var registrar: FlutterPluginRegistrar?
@@ -17,7 +17,7 @@ public final class DuoKitIosPlugin: NSObject, FlutterPlugin, FlutterStreamHandle
   private var bridge: AnyObject?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
-    let instance = DuoKitIosPlugin()
+    let instance = DuoKitPlugin()
     instance.registrar = registrar
 
     let channel = FlutterEventChannel(name: channelName, binaryMessenger: registrar.messenger())

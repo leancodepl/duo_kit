@@ -7,7 +7,6 @@ environment:
 workspace:
   - packages/duo_kit
   - packages/duo_kit/example
-  - packages/duo_kit_ios
 
 dependency_overrides:
   # Flutter 3.41 pins `meta` to `1.17.0`, but the analyzer plugins require `1.18.0`

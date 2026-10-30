@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
-  s.name             = 'duo_kit_ios'
-  s.version          = '0.1.0'
-  s.summary          = 'The iOS side of duo_kit.'
+  s.name             = 'duo_kit'
+  s.version          = '0.1.2'
+  s.summary          = 'iPhone Duo and foldable layouts for Flutter.'
   s.description      = <<-DESC
 Publishes what iPhone Duo reports natively, such as the vertical bar, the hinge
 and the reserved regions of the window, to Flutter for duo_kit.
@@ -10,7 +10,7 @@ and the reserved regions of the window, to Flutter for duo_kit.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'LeanCode' => 'https://leancode.co' }
   s.source           = { :path => '.' }
-  s.source_files     = 'duo_kit_ios/Sources/duo_kit_ios/**/*'
+  s.source_files     = 'duo_kit/Sources/duo_kit/**/*'
   s.dependency 'Flutter'
   # Xcode 27 rejects lower deployment targets.
   s.platform         = :ios, '15.0'

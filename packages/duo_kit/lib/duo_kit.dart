@@ -2,6 +2,9 @@
 /// split view and anchors for dialogs.
 library;
 
+export 'src/bridge/duo_kit_ios.dart';
+export 'src/bridge/fold_hinge.dart';
+export 'src/bridge/fold_vertical_bar_edge.dart';
 export 'src/geometry/fold_division.dart';
 export 'src/geometry/fold_geometry.dart';
 export 'src/geometry/fold_strip.dart';

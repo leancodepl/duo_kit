@@ -2,12 +2,11 @@ import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
 import 'package:duo_kit/duo_kit.dart';
 import 'package:duo_kit/testing.dart';
-import 'package:duo_kit_ios/duo_kit_ios.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _channel = EventChannel('duo_kit_ios/state');
+const _channel = EventChannel('duo_kit/state');
 
 final _ios = TargetPlatformVariant.only(TargetPlatform.iOS);
 

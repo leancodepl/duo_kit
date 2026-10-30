@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [duo_kit, duo_kit_ios]
+        package: [duo_kit]
         version: ['3.41.x']
 
     defaults:
@@ -41,7 +41,7 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: ${{ runner.os }}-pub-
 
-      # Resolves the whole pub workspace, both packages and the example.
+      # Resolves the whole pub workspace, the package and its example.
       - name: Download pub dependencies
         run: flutter pub get
 
@@ -66,7 +66,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [duo_kit, duo_kit_ios]
+        package: [duo_kit]
 
     permissions:
       contents: read
