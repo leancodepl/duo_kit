@@ -353,32 +353,39 @@ class _SchedulePageState extends State<_SchedulePage> {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final isWide = constraints.maxWidth >= _twoPaneMinWidth;
-      final list = _SessionList(
-        selected: isWide ? _selected : null,
-        onSelected: _select,
-      );
-      if (!isWide) {
-        return list;
-      }
 
-      // Splits at the fold of a half open device, and keeps the state of the
-      // panes when the fold comes and goes.
+      // A split view even where only the list fits, so that the panes keep
+      // their state when the window crosses the breakpoint or the fold comes
+      // and goes. It splits at the fold of a half open device.
       return ColoredBox(
         color: _gap,
         child: FoldSplitView(
-          first: list,
-          second: _SessionDetails(session: _sessions[_selected]),
-          unfoldedBuilder: (context, first, second) => Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(width: _sidePaneWidth, child: first),
-              const ColoredBox(
-                color: _outline,
-                child: SizedBox(width: _dividerWidth),
-              ),
-              Expanded(child: second),
-            ],
+          first: _SessionList(
+            selected: isWide ? _selected : null,
+            onSelected: _select,
           ),
+          second: _SessionDetails(session: _sessions[_selected]),
+          unfoldedBuilder: (context, first, second) => isWide
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(width: _sidePaneWidth, child: first),
+                    const ColoredBox(
+                      color: _outline,
+                      child: SizedBox(width: _dividerWidth),
+                    ),
+                    Expanded(child: second),
+                  ],
+                )
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    first,
+                    // Hidden but kept, so that the details pane is not built
+                    // anew when the window widens.
+                    Offstage(child: TickerMode(enabled: false, child: second)),
+                  ],
+                ),
         ),
       );
     },
