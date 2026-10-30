@@ -8,18 +8,13 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.package }} on Flutter ${{ matrix.version }}
+    name: Test on Flutter ${{ matrix.version }}
 
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        package: [duo_kit]
         version: ['3.41.x']
-
-    defaults:
-      run:
-        working-directory: packages/${{ matrix.package }}
 
     steps:
       - name: Checkout
@@ -45,7 +40,7 @@ jobs:
       - name: Download pub dependencies
         run: flutter pub get
 
-      # Covers the example app too, which lives in packages/duo_kit.
+      # Covers the example app too.
       - name: Run analyzer
         run: flutter analyze
 
@@ -60,13 +55,9 @@ jobs:
         run: dart pub publish --dry-run || true
 
   pana-score:
-    name: pana score of ${{ matrix.package }}
+    name: pana score
 
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package: [duo_kit]
 
     permissions:
       contents: read
@@ -80,4 +71,4 @@ jobs:
         continue-on-error: true
         uses: leancodepl/mobile-tools/.github/actions/pana-score@e9f138c252f8e2254c88273367958fcc6bb39cad # pana-score-v1.3
         with:
-          path: packages/${{ matrix.package }}
+          path: .
