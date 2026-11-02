@@ -18,6 +18,14 @@ screenshots:
   - description: The strip, the camera, the status cluster and the fold in four iPhone Duo poses.
     path: doc/imgs/geometry.png
 
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  web:
+  windows:
+
 environment:
   sdk: '>=3.11.0 <4.0.0'
   flutter: '>=3.41.0'
