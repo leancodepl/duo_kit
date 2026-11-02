@@ -64,16 +64,13 @@ showGeneralDialog<void>(
 
 ## Running it
 
-Add the platforms you want to run it on, then run it:
-
 ```sh
-flutter create --platforms=ios,android .
 flutter run
 ```
 
-On iPhone Duo, build with the iOS 27.1 SDK and raise the deployment target to
-iOS 15.0, in the Runner target and in your pods, as the
-[iPhone Duo setup][setup] describes.
+The iOS project follows the [iPhone Duo setup][setup]; build it with Xcode 27.1
+to see the fold. Add any other platform first, for example with
+`flutter create --platforms=android .`.
 
 [main]: https://github.com/leancodepl/duo_kit/blob/main/example/lib/main.dart
 [setup]: https://github.com/leancodepl/duo_kit#iphone-duo-setup

@@ -54,6 +54,35 @@ jobs:
         # We don't want it to fail the CI, it's just to see how would `pub publish` behave.
         run: dart pub publish --dry-run || true
 
+  build-example-ios:
+    name: Build the example on ${{ matrix.runner }} with ${{ matrix.dependencies }}
+
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Xcode 26.6 compiles the bridge to nothing; Xcode 27.1 compiles it.
+        runner: [macos-26, xcode-27]
+        dependencies: [CocoaPods, Swift Package Manager]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.x'
+          cache: true
+
+      - name: Enable Swift Package Manager
+        if: matrix.dependencies == 'Swift Package Manager'
+        run: flutter config --enable-swift-package-manager
+
+      - name: Build the example
+        working-directory: example
+        run: flutter build ios --debug --no-codesign
+
   pana-score:
     name: pana score
 
