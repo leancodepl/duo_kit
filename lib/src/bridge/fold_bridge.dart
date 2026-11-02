@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
+import 'package:duo_kit/src/bridge/fold_bridge_scope.dart';
 import 'package:duo_kit/src/bridge/fold_hinge.dart';
 import 'package:duo_kit/src/bridge/fold_vertical_bar_edge.dart';
+import 'package:duo_kit/src/geometry/fold_geometry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -14,40 +16,22 @@ import 'package:flutter/widgets.dart';
 /// Flutter's dialogs find them. The fold is added while the device is partly
 /// open; the occlusions also while it is closed.
 ///
-/// [hingeOf] and [verticalBarEdgeOf] read what [MediaQuery] has no room for.
+/// See also [FoldHinge.maybeOf] and [FoldGeometry.verticalBarEdge].
 ///
 /// Place it above the app, so that overlays outside the navigator see it too.
 /// On other platforms it passes [child] through.
-class DuoKitIos extends StatefulWidget {
+class FoldBridge extends StatefulWidget {
   /// Creates the bridge.
-  const DuoKitIos({super.key, required this.child});
+  const FoldBridge({super.key, required this.child});
 
   /// The app.
   final Widget child;
 
-  /// The state of the hinge, or null where the system reports none: on a
-  /// device without a hinge, on another platform, or without a [DuoKitIos]
-  /// above [context].
-  static FoldHinge? hingeOf(BuildContext context) =>
-      InheritedModel.inheritFrom<_DuoKitIosScope>(
-        context,
-        aspect: _DuoKitIosAspect.hinge,
-      )?.hinge;
-
-  /// The edge where the system places its vertical bar, or
-  /// [FoldVerticalBarEdge.unspecified] where it reports none.
-  static FoldVerticalBarEdge verticalBarEdgeOf(BuildContext context) =>
-      InheritedModel.inheritFrom<_DuoKitIosScope>(
-        context,
-        aspect: _DuoKitIosAspect.verticalBarEdge,
-      )?.verticalBarEdge ??
-      FoldVerticalBarEdge.unspecified;
-
   @override
-  State<DuoKitIos> createState() => _DuoKitIosState();
+  State<FoldBridge> createState() => _FoldBridgeState();
 }
 
-class _DuoKitIosState extends State<DuoKitIos> {
+class _FoldBridgeState extends State<FoldBridge> {
   static const _channel = EventChannel('duo_kit/state');
 
   StreamSubscription<Object?>? _subscription;
@@ -110,7 +94,7 @@ class _DuoKitIosState extends State<DuoKitIos> {
 
     // Always the same MediaQuery, so that the state below survives the first
     // message.
-    return _DuoKitIosScope(
+    return FoldBridgeScope(
       hinge: _state.hinge,
       verticalBarEdge: _state.verticalBarEdge,
       child: MediaQuery(
@@ -262,31 +246,4 @@ class _NativeState {
     fold,
     isFoldActive,
   );
-}
-
-enum _DuoKitIosAspect { hinge, verticalBarEdge }
-
-class _DuoKitIosScope extends InheritedModel<_DuoKitIosAspect> {
-  const _DuoKitIosScope({
-    required this.hinge,
-    required this.verticalBarEdge,
-    required super.child,
-  });
-
-  final FoldHinge? hinge;
-  final FoldVerticalBarEdge verticalBarEdge;
-
-  @override
-  bool updateShouldNotify(_DuoKitIosScope oldWidget) =>
-      hinge != oldWidget.hinge || verticalBarEdge != oldWidget.verticalBarEdge;
-
-  @override
-  bool updateShouldNotifyDependent(
-    _DuoKitIosScope oldWidget,
-    Set<_DuoKitIosAspect> dependencies,
-  ) =>
-      (dependencies.contains(_DuoKitIosAspect.hinge) &&
-          hinge != oldWidget.hinge) ||
-      (dependencies.contains(_DuoKitIosAspect.verticalBarEdge) &&
-          verticalBarEdge != oldWidget.verticalBarEdge);
 }

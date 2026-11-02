@@ -65,10 +65,10 @@ void main() {
     await tester.pumpWidget(
       MediaQuery(
         data: const MediaQueryData(),
-        child: DuoKitIos(
+        child: FoldBridge(
           child: Builder(
             builder: (context) {
-              hinge = DuoKitIos.hingeOf(context);
+              hinge = FoldHinge.maybeOf(context);
               features = MediaQuery.displayFeaturesOf(context);
 
               return const SizedBox();
@@ -82,15 +82,15 @@ void main() {
     expect(features, isEmpty);
   });
 
-  testWidgets('reports nothing without a DuoKitIos above', (tester) async {
+  testWidgets('reports nothing without a FoldBridge above', (tester) async {
     late FoldHinge? hinge;
     late FoldVerticalBarEdge edge;
 
     await tester.pumpWidget(
       Builder(
         builder: (context) {
-          hinge = DuoKitIos.hingeOf(context);
-          edge = DuoKitIos.verticalBarEdgeOf(context);
+          hinge = FoldHinge.maybeOf(context);
+          edge = FoldGeometry.of(context).verticalBarEdge;
 
           return const SizedBox();
         },
@@ -123,7 +123,7 @@ void main() {
         probe.hinge,
         const FoldHinge(status: FoldHingeStatus.closed, angle: 0),
       );
-      expect(probe.edge, FoldVerticalBarEdge.trailing);
+      expect(probe.geometry.verticalBarEdge, FoldVerticalBarEdge.trailing);
     },
   );
 
@@ -199,6 +199,28 @@ void main() {
     },
   );
 
+  testWidgets(
+    'rebuilds a reader of the hinge only when the hinge changes',
+    variant: _ios,
+    (tester) async {
+      final probe = await _pumpBridge(tester, FoldTestPose.duoCover.data);
+      await probe.send(_closedCoverMessage);
+      final hingeBuilds = probe.hingeBuilds;
+
+      await probe.send({..._closedCoverMessage, 'verticalBarEdge': 'leading'});
+
+      expect(probe.geometry.verticalBarEdge, FoldVerticalBarEdge.leading);
+      expect(probe.hingeBuilds, hingeBuilds);
+
+      await probe.send({
+        ..._closedCoverMessage,
+        'hinge': {'status': _partiallyOpen, 'angle': 1.2},
+      });
+
+      expect(probe.hingeBuilds, hingeBuilds + 1);
+    },
+  );
+
   testWidgets('keeps the display features of the platform', variant: _ios, (
     tester,
   ) async {
@@ -236,7 +258,7 @@ void main() {
 MediaQueryData _withoutFeatures(FoldTestPose pose) =>
     pose.data.copyWith(displayFeatures: const []);
 
-/// What the widgets below a [DuoKitIos] see.
+/// What the widgets below a [FoldBridge] see.
 class _Probe {
   _Probe(this._tester);
 
@@ -244,8 +266,8 @@ class _Probe {
   late MockStreamHandlerEventSink _sink;
   late FoldGeometry geometry;
   late FoldHinge? hinge;
-  late FoldVerticalBarEdge edge;
   late List<DisplayFeature> features;
+  int hingeBuilds = 0;
 
   /// Sends [message] from the native side, then pumps a frame for it to
   /// arrive and one for the widgets to rebuild.
@@ -256,7 +278,7 @@ class _Probe {
   }
 }
 
-/// Pumps a [DuoKitIos] in a window described by [data], with a mocked native
+/// Pumps a [FoldBridge] in a window described by [data], with a mocked native
 /// side.
 Future<_Probe> _pumpBridge(WidgetTester tester, MediaQueryData data) async {
   final probe = _Probe(tester);
@@ -274,17 +296,28 @@ Future<_Probe> _pumpBridge(WidgetTester tester, MediaQueryData data) async {
   await tester.pumpWidget(
     MediaQuery(
       data: data,
-      child: DuoKitIos(
-        child: Builder(
-          builder: (context) {
-            probe
-              ..geometry = FoldGeometry.of(context)
-              ..hinge = DuoKitIos.hingeOf(context)
-              ..edge = DuoKitIos.verticalBarEdgeOf(context)
-              ..features = MediaQuery.displayFeaturesOf(context);
+      child: FoldBridge(
+        child: Column(
+          children: [
+            Builder(
+              builder: (context) {
+                probe
+                  ..geometry = FoldGeometry.of(context)
+                  ..hinge = FoldHinge.maybeOf(context)
+                  ..features = MediaQuery.displayFeaturesOf(context);
 
-            return const SizedBox();
-          },
+                return const SizedBox();
+              },
+            ),
+            Builder(
+              builder: (context) {
+                FoldHinge.maybeOf(context);
+                probe.hingeBuilds++;
+
+                return const SizedBox();
+              },
+            ),
+          ],
         ),
       ),
     ),

@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:duo_kit/src/bridge/fold_bridge.dart';
+import 'package:duo_kit/src/bridge/fold_bridge_scope.dart';
+import 'package:flutter/widgets.dart';
 
 /// How far a hinge is open, as the system reports it.
 enum FoldHingeStatus {
@@ -20,6 +22,10 @@ enum FoldHingeStatus {
 class FoldHinge {
   /// Creates a hinge state.
   const FoldHinge({required this.status, required this.angle});
+
+  /// The hinge from the nearest [FoldBridge], or null where none is reported.
+  static FoldHinge? maybeOf(BuildContext context) =>
+      FoldBridgeScope.maybeHingeOf(context);
 
   /// How far the hinge is open.
   ///

@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
+import 'package:duo_kit/src/bridge/fold_bridge.dart';
+import 'package:duo_kit/src/bridge/fold_bridge_scope.dart';
+import 'package:duo_kit/src/bridge/fold_vertical_bar_edge.dart';
 import 'package:duo_kit/src/geometry/fold_division.dart';
 import 'package:duo_kit/src/geometry/fold_strip.dart';
 import 'package:flutter/foundation.dart';
@@ -10,9 +13,8 @@ import 'package:flutter/widgets.dart';
 /// controls, a fold that splits the window, and occlusions such as cameras.
 ///
 /// Computed from [MediaQueryData.viewPadding] and
-/// [MediaQueryData.displayFeatures] only. Android fills the display features
-/// itself; on iOS something has to publish them, such as a bridge from a
-/// plugin that reads the reserved regions of the window.
+/// [MediaQueryData.displayFeatures]. Android fills the display features
+/// itself; on iOS a [FoldBridge] publishes them.
 ///
 /// Holds raw geometry, without margins or sizes of any controls.
 @immutable
@@ -24,6 +26,7 @@ class FoldGeometry {
     this.strip,
     this.division,
     this.occlusions = const [],
+    this.verticalBarEdge = FoldVerticalBarEdge.unspecified,
   });
 
   /// Computes the geometry of the window described by [data].
@@ -33,19 +36,21 @@ class FoldGeometry {
     MediaQueryData data, {
     bool? detectStrip,
     double stripFallbackClearance = defaultStripFallbackClearance,
+    FoldVerticalBarEdge verticalBarEdge = FoldVerticalBarEdge.unspecified,
   }) => FoldGeometry._compute(
     size: data.size,
     viewPadding: data.viewPadding,
     displayFeatures: data.displayFeatures,
     detectStrip: detectStrip,
     stripFallbackClearance: stripFallbackClearance,
+    verticalBarEdge: verticalBarEdge,
   );
 
   /// Computes the geometry of the window from the nearest [MediaQuery].
   ///
   /// Depends only on the size, view padding and display features of the
-  /// [MediaQuery], so [context] does not rebuild when anything else in it
-  /// changes.
+  /// [MediaQuery], and on [verticalBarEdge], so [context] does not rebuild
+  /// when anything else changes.
   ///
   /// A [FoldStrip] is looked for only when [detectStrip] is true, which by
   /// default it is on iOS alone. The strip is recognised by an inset on one
@@ -64,6 +69,7 @@ class FoldGeometry {
     displayFeatures: MediaQuery.displayFeaturesOf(context),
     detectStrip: detectStrip,
     stripFallbackClearance: stripFallbackClearance,
+    verticalBarEdge: FoldBridgeScope.verticalBarEdgeOf(context),
   );
 
   factory FoldGeometry._compute({
@@ -72,6 +78,7 @@ class FoldGeometry {
     required List<DisplayFeature> displayFeatures,
     required bool? detectStrip,
     required double stripFallbackClearance,
+    required FoldVerticalBarEdge verticalBarEdge,
   }) {
     final window = Offset.zero & size;
     final occlusions = displayFeatures
@@ -107,6 +114,7 @@ class FoldGeometry {
       strip: strip,
       division: division,
       occlusions: occlusions,
+      verticalBarEdge: verticalBarEdge,
     );
   }
 
@@ -139,6 +147,9 @@ class FoldGeometry {
   /// Areas of the window the hardware covers, such as cameras and the status
   /// cluster, in window coordinates.
   final List<Rect> occlusions;
+
+  /// The edge of the vertical bar, as the nearest [FoldBridge] reports it.
+  final FoldVerticalBarEdge verticalBarEdge;
 
   /// The width of the window without the side view padding.
   ///
@@ -253,7 +264,8 @@ class FoldGeometry {
       other.viewPadding == viewPadding &&
       other.strip == strip &&
       other.division == division &&
-      listEquals(other.occlusions, occlusions);
+      listEquals(other.occlusions, occlusions) &&
+      other.verticalBarEdge == verticalBarEdge;
 
   @override
   int get hashCode => Object.hash(
@@ -262,10 +274,12 @@ class FoldGeometry {
     strip,
     division,
     Object.hashAll(occlusions),
+    verticalBarEdge,
   );
 
   @override
   String toString() =>
       'FoldGeometry($size, viewPadding: $viewPadding, strip: $strip, '
-      'division: $division, occlusions: $occlusions)';
+      'division: $division, occlusions: $occlusions, '
+      'verticalBarEdge: ${verticalBarEdge.name})';
 }
