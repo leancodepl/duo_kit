@@ -49,8 +49,10 @@ parts of that which are easy to miss:
 
 ## Features
 
+- **`FoldBridge`** – on iOS, publishes the fold, the camera and the status
+  cluster of iPhone Duo to `MediaQuery`, and reports the hinge.
 - **`FoldGeometry`** – the strip, the fold and the occlusions of the window,
-  computed from `MediaQuery` alone.
+  computed from `MediaQuery`.
 - **`FoldScaffold`** – puts your navigation along the bottom edge or, where the
   window has a strip, in the strip, and pads the body to match.
 - **`FoldSplitView`** – lays two panes out on either side of a fold, with your
@@ -81,38 +83,55 @@ Material apps on iOS.
 flutter pub add duo_kit
 ```
 
+duo_kit has iOS code, so an iOS app needs iOS 15.0 or later as its deployment
+target, in the Runner target and in its pods.
+
 ## Where the geometry comes from
 
-duo_kit reads only `MediaQuery.viewPadding` and `MediaQuery.displayFeatures`:
+duo_kit reads `MediaQuery.viewPadding` and `MediaQuery.displayFeatures`:
 
 - **Android** – Flutter fills the display features of a foldable by itself.
-- **iOS** – nothing fills them yet. Publish the fold and the camera with a
-  plugin that reads the reserved regions of the window, such as
-  [`foldable`][foldable] with `DisplayFeatureBridgeMode.full`:
+- **iOS** – Flutter does not fill them yet. `FoldBridge` publishes the fold,
+  the camera and the status cluster, the closed device included:
 
   ```dart
-  FoldableProvider(
-    bridgeMode: DisplayFeatureBridgeMode.full,
-    child: app,
-  )
+  runApp(const FoldBridge(child: MyApp()));
   ```
 
   Place it above your app, so that overlays outside the navigator see the fold
-  too. While the device is closed, `foldable` publishes nothing; to keep the
-  strip of the cover display clear of the status cluster, add its occlusions
-  yourself, as [`ClosedFoldOcclusions`][closed-fold-occlusions] in the example
-  does.
-
-  [`duo_kit_ios`][duo-kit-ios], in development in the same repository, will
-  publish all of them natively, the closed device included.
+  too. On other platforms it passes its child through.
 
   With the fold published, Flutter keeps dialogs, sheets and pickers on one side
   of it while the device is half open, as it does on Android.
 
+`FoldBridge` also reports what `MediaQuery` has no room for:
+
+```dart
+FoldHinge.maybeOf(context); // The status and the angle of the hinge.
+FoldGeometry.of(context).verticalBarEdge; // Where the system wants the strip.
+```
+
+Prefer the status of the hinge to its angle: the system decides how often and
+how precisely it updates the angle. The edge of the vertical bar is reported
+even where the window has no strip, as on the left of Split View.
+
+### How `FoldBridge` works
+
+It reads the reserved regions of the Flutter view, the hinge through
+`UIHingeInteraction` and the edge of the vertical bar from the trait
+collection, and sends them to Dart each time one of them changes. UIKit sends
+no notification when a reserved region changes, so the bridge reads the regions
+in the layout of a view that draws nothing, which UIKit lays out again when
+they change, as the [`foldable`][foldable] package found.
+
+The fold follows the status of the hinge, since the active flag of its region
+turns on about a second after the device comes to rest half open.
+
 ## iPhone Duo setup
 
 - **Build with the iOS 27.1 SDK** (Xcode 27.1). With an older SDK, iOS runs the
-  app in compatibility mode, with no strip and no reserved regions.
+  app in compatibility mode, with no strip and no reserved regions, and
+  `FoldBridge` compiles to nothing.
 - **Adopt the UIScene life cycle.** With the iOS 27 SDK an app without it
   crashes at launch. Projects created with Flutter 3.41 already have it; in an
   older one, make your `AppDelegate` a `FlutterImplicitEngineDelegate`,
@@ -231,7 +250,7 @@ kDebugMode ? FoldDebugTools(child: app) : app
 
 A button at the left edge switches between poses – a strip, a fold like a book,
 a fold like a laptop – on any device, and holding it shows or hides the geometry
-over your app. Place it below whatever publishes the real fold.
+over your app. Place it below `FoldBridge`.
 
 ### Tests
 
@@ -252,11 +271,10 @@ MediaQuery(data: FoldTestPose.duoHalfOpenedLandscape.data, child: screen)
   app there, so its navigation stays at the bottom.
 - `FoldSplitView` measures where it sits after it builds, resizes or scrolls,
   and catches up one frame later.
-- With `foldable`, the fold reaches the display features about a second after
-  the device comes to rest half open, since the reserved regions follow the
-  hinge with a delay.
-- Tested on the iPhone Duo simulator. Android foldables follow from the same
-  display features, but have not been tested on a device.
+- While the device rotates, folds or unfolds, the reserved regions can lead the
+  size of the window by a frame or two.
+- Tested on the iPhone Duo simulator with iOS 27.1. Android foldables follow
+  from the same display features, but have not been tested on a device.
 
 ## Working on duo_kit
 
@@ -305,8 +323,6 @@ We are **top-tier experts** focused on Flutter Enterprise solutions.
 [geometry-img]: https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/doc/imgs/geometry.png
 [foldable]: https://pub.dev/packages/foldable
 [hig-duo]: https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo
-[closed-fold-occlusions]: https://github.com/leancodepl/duo_kit/blob/main/example/lib/closed_fold_occlusions.dart
-[duo-kit-ios]: https://github.com/leancodepl/duo_kit/tree/main/packages/duo_kit_ios
 [adaptive-platform-ui]: https://pub.dev/packages/adaptive_platform_ui
 [leancode-landing]: https://leancode.co/?utm_source=github.com&utm_medium=referral&utm_campaign=duo-kit
 [leancode-estimate]: https://leancode.co/get-estimate?utm_source=github.com&utm_medium=referral&utm_campaign=duo-kit

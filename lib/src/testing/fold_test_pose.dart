@@ -1,5 +1,6 @@
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
+import 'package:duo_kit/src/bridge/fold_bridge.dart';
 import 'package:flutter/widgets.dart';
 
 const _coverWidth = 466.0;
@@ -127,9 +128,9 @@ const _portraitFold = DisplayFeature(
 /// Window metrics of iPhone Duo poses, for widget and golden tests.
 ///
 /// Measured on the iPhone Duo simulator (iOS 27.1). The fold and the
-/// occlusions appear in [MediaQueryData.displayFeatures] as a bridge
-/// publishing the reserved regions of the window puts them there: occlusions
-/// as cutouts, and the fold only while the device is half open.
+/// occlusions appear in [MediaQueryData.displayFeatures] as a [FoldBridge]
+/// puts them there: occlusions as cutouts, and the fold only while the device
+/// is half open.
 ///
 /// The inner display has one landscape pose: in both landscape rotations the
 /// system keeps the strip and the status cluster on the right. On the cover
@@ -137,9 +138,9 @@ const _portraitFold = DisplayFeature(
 /// side.
 enum FoldTestPose {
   /// The cover display of the closed device, with no display features, as
-  /// Flutter reports it without a bridge.
+  /// Flutter reports it without a [FoldBridge].
   ///
-  /// [duoCoverWithOcclusions] is what a bridge such as duo_kit_ios reports.
+  /// [duoCoverWithOcclusions] is what a [FoldBridge] reports.
   duoCover(
     MediaQueryData(
       size: _coverSize,
