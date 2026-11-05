@@ -100,7 +100,8 @@ duo_kit reads `MediaQuery.viewPadding` and `MediaQuery.displayFeatures`:
   ```
 
   Place it above your app, so that overlays outside the navigator see the fold
-  too, and use only one. On other platforms it passes its child through.
+  too, and use only one. On other platforms and on devices without a hinge it
+  passes its child through.
 
   With the fold published, Flutter keeps dialogs, sheets and pickers on one side
   of it while the device is half open, as it does on Android.

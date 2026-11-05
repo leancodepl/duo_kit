@@ -20,7 +20,7 @@ import 'package:flutter/widgets.dart';
 ///
 /// Place it above the app, so that overlays outside the navigator see it too.
 /// Use only one: every [FoldBridge] listens on the same native channel.
-/// On other platforms it passes [child] through.
+/// On other platforms and on devices without a hinge it passes [child] through.
 class FoldBridge extends StatefulWidget {
   /// Creates the bridge.
   const FoldBridge({super.key, required this.child});

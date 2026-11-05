@@ -35,6 +35,9 @@ final class DuoBridge {
   }
 
   private func update() {
+    // A device without a hinge stays as Flutter sees it, whatever else it reports.
+    guard let hinge else { return }
+
     let state = DuoState(hinge: hinge, view: observer)
     guard state != lastState else { return }
 
