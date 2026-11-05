@@ -266,6 +266,18 @@ import 'package:duo_kit/testing.dart';
 MediaQuery(data: FoldTestPose.duoHalfOpenedLandscape.data, child: screen)
 ```
 
+`FoldBridgeScope` stands in for what `FoldBridge` reports, such as the edge of
+the vertical bar on the left of Split View:
+
+```dart
+FoldBridgeScope(
+  verticalBarEdge: FoldVerticalBarEdge.leading,
+  child: MediaQuery(
+    data: FoldTestPose.duoInnerSplitViewLeft.data,
+    child: screen,
+  ),
+)
+```
 
 ## Limitations
 

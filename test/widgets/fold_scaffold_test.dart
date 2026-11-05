@@ -1,5 +1,4 @@
 import 'package:duo_kit/duo_kit.dart';
-import 'package:duo_kit/src/bridge/fold_bridge_scope.dart';
 import 'package:duo_kit/testing.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,14 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 const _bodyKey = ValueKey('body');
 const _navigationKey = ValueKey('navigation');
 const _navigationHeight = 60.0;
-
-/// The left of Split View on the inner display, where iOS 27.1 reports the
-/// vertical bar on the leading edge but no inset for it.
-const _splitViewLeft = MediaQueryData(
-  size: Size(469, 669),
-  padding: EdgeInsets.only(bottom: 34),
-  viewPadding: EdgeInsets.only(bottom: 34),
-);
 
 final _ios = TargetPlatformVariant.only(TargetPlatform.iOS);
 
@@ -105,7 +96,7 @@ void main() {
     (tester) async {
       final placements = await _pumpScaffold(
         tester,
-        _splitViewLeft,
+        FoldTestPose.duoInnerSplitViewLeft.data,
         verticalBarEdge: FoldVerticalBarEdge.leading,
       );
 
@@ -136,7 +127,7 @@ void main() {
     (tester) async {
       final placements = await _pumpScaffold(
         tester,
-        _splitViewLeft,
+        FoldTestPose.duoInnerSplitViewLeft.data,
         verticalBarEdge: FoldVerticalBarEdge.leading,
         textDirection: TextDirection.rtl,
         verticalBarWidth: 100,
@@ -156,7 +147,7 @@ void main() {
     (tester) async {
       final placements = await _pumpScaffold(
         tester,
-        _splitViewLeft,
+        FoldTestPose.duoInnerSplitViewLeft.data,
         verticalBarEdge: FoldVerticalBarEdge.leading,
         verticalBarWidth: null,
       );
@@ -247,7 +238,6 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
 
   await tester.pumpWidget(
     FoldBridgeScope(
-      hinge: null,
       verticalBarEdge: verticalBarEdge,
       child: MediaQuery(
         data: data,
