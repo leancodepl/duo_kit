@@ -5,8 +5,8 @@ import PackageDescription
 let package = Package(
     name: "duo_kit",
     platforms: [
-        // Xcode 27 rejects lower deployment targets.
-        .iOS("15.0")
+        // Flutter's minimum, so that apps without iPhone Duo keep theirs.
+        .iOS("13.0")
     ],
     products: [
         .library(name: "duo-kit", targets: ["duo_kit"])

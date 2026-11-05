@@ -84,8 +84,8 @@ Material apps on iOS.
 flutter pub add duo_kit
 ```
 
-duo_kit has iOS code, so an iOS app needs iOS 15.0 or later as its deployment
-target, in the Runner target and in its pods.
+duo_kit supports the iOS versions Flutter does. To see the fold on iPhone Duo,
+follow the [iPhone Duo setup](#iphone-duo-setup).
 
 ## Where the geometry comes from
 

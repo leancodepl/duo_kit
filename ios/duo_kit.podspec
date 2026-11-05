@@ -12,8 +12,8 @@ and the reserved regions of the window, to Flutter for duo_kit.
   s.source           = { :path => '.' }
   s.source_files     = 'duo_kit/Sources/duo_kit/**/*'
   s.dependency 'Flutter'
-  # Xcode 27 rejects lower deployment targets.
-  s.platform         = :ios, '15.0'
+  # Flutter's minimum, so that apps without iPhone Duo keep theirs.
+  s.platform         = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
