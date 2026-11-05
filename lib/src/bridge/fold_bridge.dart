@@ -37,7 +37,9 @@ class _FoldBridgeState extends State<FoldBridge> {
   /// Read by hand: [EventChannel] reports a missing plugin as an error.
   static const _channel = OptionalMethodChannel('duo_kit/state');
 
-  var _isListening = false;
+  /// The listening bridge, as a new one starts before the old one is disposed.
+  static _FoldBridgeState? _listener;
+
   var _state = _NativeState.none;
 
   (List<DisplayFeature>, _NativeState)? _featuresKey;
@@ -48,7 +50,7 @@ class _FoldBridgeState extends State<FoldBridge> {
     super.initState();
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      _isListening = true;
+      _listener = this;
       _channel.binaryMessenger.setMessageHandler(_channel.name, _onEnvelope);
       unawaited(_invoke('listen'));
     }
@@ -56,7 +58,8 @@ class _FoldBridgeState extends State<FoldBridge> {
 
   @override
   void dispose() {
-    if (_isListening) {
+    if (_listener == this) {
+      _listener = null;
       _channel.binaryMessenger.setMessageHandler(_channel.name, null);
       unawaited(_invoke('cancel'));
     }
