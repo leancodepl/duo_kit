@@ -1,6 +1,7 @@
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
 import 'package:duo_kit/duo_kit.dart';
+import 'package:flutter/gestures.dart' show DeviceGestureSettings;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +31,35 @@ const _windows = {
   'an iPhone without a notch in landscape': (
     TargetPlatform.iOS,
     MediaQueryData(size: Size(667, 375)),
+  ),
+  // Every field off its default, so that none gets lost on the way.
+  'an iPhone with the keyboard up and every accessibility setting on': (
+    TargetPlatform.iOS,
+    MediaQueryData(
+      size: Size(402, 874),
+      devicePixelRatio: 3,
+      textScaler: TextScaler.linear(1.5),
+      platformBrightness: Brightness.dark,
+      padding: EdgeInsets.only(top: 62),
+      viewInsets: EdgeInsets.only(bottom: 336),
+      systemGestureInsets: EdgeInsets.only(bottom: 34),
+      viewPadding: EdgeInsets.only(top: 62, bottom: 34),
+      alwaysUse24HourFormat: true,
+      accessibleNavigation: true,
+      invertColors: true,
+      highContrast: true,
+      onOffSwitchLabels: true,
+      disableAnimations: true,
+      boldText: true,
+      supportsAnnounce: true,
+      navigationMode: NavigationMode.directional,
+      gestureSettings: DeviceGestureSettings(touchSlop: 12),
+      supportsShowingSystemContextMenu: true,
+      lineHeightScaleFactorOverride: 1.5,
+      letterSpacingOverride: 0.12,
+      wordSpacingOverride: 0.16,
+      paragraphSpacingOverride: 2,
+    ),
   ),
   'an iPad in landscape': (
     TargetPlatform.iOS,
