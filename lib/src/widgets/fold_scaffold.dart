@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:duo_kit/src/bridge/fold_vertical_bar_edge.dart';
 import 'package:duo_kit/src/geometry/fold_geometry.dart';
 import 'package:duo_kit/src/geometry/fold_strip.dart';
 import 'package:flutter/widgets.dart';
@@ -9,11 +10,11 @@ enum FoldNavigationPlacement {
   /// Along the bottom edge of the window.
   bottom,
 
-  /// In the strip the system keeps along the left edge, as on the cover
-  /// display of iPhone Duo in landscape with the camera on the left.
+  /// In a strip along the left edge, as on the cover display of iPhone Duo in
+  /// landscape with the camera on the left.
   left,
 
-  /// In the strip the system keeps along the right edge.
+  /// In a strip along the right edge.
   right;
 
   /// The direction to lay the navigation items out in.
@@ -30,6 +31,9 @@ typedef FoldNavigationBuilder =
 /// Lays [body] out with the navigation from [navigationBuilder] either along
 /// the bottom edge or, where the window has a [FoldStrip], in that strip.
 ///
+/// Where the system wants its vertical bar on an edge with no room for it, as
+/// on the left of Split View, the navigation takes [verticalBarWidth] there.
+///
 /// Draws nothing itself. The navigation gets the [MediaQuery] padding of the
 /// area it sits in: the bottom inset at the bottom, and in the strip the
 /// clearances of the camera and status cluster plus the bottom inset. The
@@ -44,7 +48,11 @@ class FoldScaffold extends StatelessWidget {
     required this.body,
     required this.navigationBuilder,
     this.detectStrip,
+    this.verticalBarWidth = defaultVerticalBarWidth,
   });
+
+  /// The width of the strip the system keeps on iPhone Duo.
+  static const defaultVerticalBarWidth = 84.0;
 
   /// The content next to the navigation.
   final Widget body;
@@ -55,10 +63,17 @@ class FoldScaffold extends StatelessWidget {
   /// See [FoldGeometry.of].
   final bool? detectStrip;
 
+  /// The width of the navigation on the edge of [FoldGeometry.verticalBarEdge]
+  /// where the window has no strip, or null to keep it at the bottom there.
+  final double? verticalBarWidth;
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final strip = FoldGeometry.of(context, detectStrip: detectStrip).strip;
+    final geometry = FoldGeometry.of(context, detectStrip: detectStrip);
+    final strip =
+        geometry.strip ??
+        _getVerticalBarStrip(geometry, Directionality.of(context));
 
     final placement = switch (strip?.side) {
       FoldStripSide.left => FoldNavigationPlacement.left,
@@ -92,6 +107,51 @@ class FoldScaffold extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// A strip for the vertical bar where the window has no room for it.
+  FoldStrip? _getVerticalBarStrip(
+    FoldGeometry geometry,
+    TextDirection direction,
+  ) {
+    final side = switch ((geometry.verticalBarEdge, direction)) {
+      (FoldVerticalBarEdge.unspecified, _) => null,
+      (FoldVerticalBarEdge.leading, TextDirection.ltr) ||
+      (FoldVerticalBarEdge.trailing, TextDirection.rtl) => FoldStripSide.left,
+      (FoldVerticalBarEdge.leading, TextDirection.rtl) ||
+      (FoldVerticalBarEdge.trailing, TextDirection.ltr) => FoldStripSide.right,
+    };
+
+    // While the device folds or rotates, the edge can change a moment before
+    // the window does. No window with a vertical bar has a top inset.
+    final EdgeInsets(:left, :right, :top) = geometry.viewPadding;
+    final hasRoom = switch (side) {
+      FoldStripSide.left => left > 0,
+      FoldStripSide.right => right > 0,
+      null => true,
+    };
+    final width = verticalBarWidth;
+    if (side == null || width == null || hasRoom || top > 0) {
+      return null;
+    }
+
+    final size = geometry.size;
+
+    return FoldStrip(
+      side: side,
+      rect: switch (side) {
+        FoldStripSide.left => Rect.fromLTWH(0, 0, width, size.height),
+        FoldStripSide.right => Rect.fromLTWH(
+          size.width - width,
+          0,
+          width,
+          size.height,
+        ),
+      },
+      topClearance: 0,
+      bottomClearance: 0,
+      isClearanceEstimated: false,
     );
   }
 

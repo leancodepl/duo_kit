@@ -53,8 +53,9 @@ parts of that which are easy to miss:
   cluster of iPhone Duo to `MediaQuery`, and reports the hinge.
 - **`FoldGeometry`** – the strip, the fold and the occlusions of the window,
   computed from `MediaQuery`.
-- **`FoldScaffold`** – puts your navigation along the bottom edge or, where the
-  window has a strip, in the strip, and pads the body to match.
+- **`FoldScaffold`** – puts your navigation along the bottom edge or in the
+  strip, also where iOS wants a strip but leaves no room for it, and pads the
+  body to match.
 - **`FoldSplitView`** – lays two panes out on either side of a fold, with your
   own layout while there is none, and keeps their state when the fold comes and
   goes.
@@ -170,9 +171,14 @@ pose and keeps its state.
 ![The navigation in the strip of the cover display, below the status cluster, and along the bottom edge of the inner display in portrait][navigation-img]
 
 In a strip, `placement` is `left` or `right`, the side the strip runs along. On
-iPhone Duo it is `left` only on the cover display in landscape, with the camera
-on the left. Put whatever faces the content, such as a divider or a selection
-indicator, on the edge towards the body.
+iPhone Duo it is `left` on the cover display in landscape with the camera on the
+left, and on the left of Split View. Put whatever faces the content, such as a
+divider or a selection indicator, on the edge towards the body.
+
+On the left of Split View iOS wants its vertical bar on the left but leaves a
+Flutter app no room for it, so `FoldScaffold` takes `verticalBarWidth` there,
+84 points by default like the strip on the right. Pass `null` to keep the
+navigation at the bottom.
 
 ### Two panes
 
@@ -267,8 +273,9 @@ MediaQuery(data: FoldTestPose.duoHalfOpenedLandscape.data, child: screen)
   report the same insets for its camera cutout. Pass `detectStrip` to change
   that.
 - Apple's [guidelines for iPhone Duo][hig-duo] put the strip on the left for
-  the app on the left of Split View, but iOS 27.1 reports no strip to a Flutter
-  app there, so its navigation stays at the bottom.
+  the app on the left of Split View, but iOS 27.1 reserves no room for it in a
+  Flutter app. `FoldScaffold` makes the room itself, while
+  `FoldGeometry.strip` stays null there. Right-to-left layouts are untested.
 - `FoldSplitView` measures where it sits after it builds, resizes or scrolls,
   and catches up one frame later.
 - While the device rotates, folds or unfolds, the reserved regions can lead the
