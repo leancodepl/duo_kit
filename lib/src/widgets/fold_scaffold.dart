@@ -60,7 +60,7 @@ class FoldScaffold extends StatelessWidget {
   /// Builds the navigation for where it goes.
   final FoldNavigationBuilder navigationBuilder;
 
-  /// See [FoldGeometry.of].
+  /// See [FoldGeometry.of]. Does not turn off [verticalBarWidth].
   final bool? detectStrip;
 
   /// The width of the navigation on the edge of [FoldGeometry.verticalBarEdge]
