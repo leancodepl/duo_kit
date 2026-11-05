@@ -6,19 +6,16 @@ import UIKit
 /// Reads what iPhone Duo reports for a view, and sends it each time it changes.
 @available(iOS 27.1, *)
 final class DuoBridge {
-  private let observer = RegionObserverView()
+  private weak var host: UIView?
   private let send: ([String: Any]) -> Void
   private var interaction: UIHingeInteraction?
+  private var observer: RegionObserverView?
   private var hinge: UIHinge?
   private var lastState: DuoState?
 
   init(host: UIView, send: @escaping ([String: Any]) -> Void) {
+    self.host = host
     self.send = send
-
-    observer.frame = host.bounds
-    observer.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    observer.onLayout = { [weak self] in self?.update() }
-    host.insertSubview(observer, at: 0)
 
     let interaction = UIHingeInteraction { [weak self] _, update in
       self?.hinge = update.hinge
@@ -35,14 +32,28 @@ final class DuoBridge {
   }
 
   private func update() {
-    // A device without a hinge stays as Flutter sees it, whatever else it reports.
-    guard let hinge else { return }
+    // A device without a hinge stays as Flutter sees it and gets no extra view.
+    guard let hinge, let observer = getObserver() else { return }
 
     let state = DuoState(hinge: hinge, view: observer)
     guard state != lastState else { return }
 
     lastState = state
     send(state.message)
+  }
+
+  /// Adds the view that reads the reserved regions, only once a hinge is known.
+  private func getObserver() -> RegionObserverView? {
+    if let observer { return observer }
+    guard let host else { return nil }
+
+    let observer = RegionObserverView(frame: host.bounds)
+    observer.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    observer.onLayout = { [weak self] in self?.update() }
+    host.insertSubview(observer, at: 0)
+    self.observer = observer
+
+    return observer
   }
 }
 
