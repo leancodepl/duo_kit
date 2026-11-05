@@ -82,6 +82,53 @@ void main() {
     expect(features, isEmpty);
   });
 
+  testWidgets('passes its child through without the plugin', variant: _ios, (
+    tester,
+  ) async {
+    // The engine answers nothing on a channel without a plugin.
+    final messenger = tester.binding.defaultBinaryMessenger
+      ..setMockMessageHandler(_channel.name, (message) async => null);
+    addTearDown(() => messenger.setMockMessageHandler(_channel.name, null));
+
+    late List<DisplayFeature> features;
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(),
+        child: FoldBridge(
+          child: Builder(
+            builder: (context) {
+              features = MediaQuery.displayFeaturesOf(context);
+
+              return const SizedBox();
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpWidget(const SizedBox());
+
+    expect(features, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reports an error of the plugin', variant: _ios, (tester) async {
+    final methodChannel = MethodChannel(_channel.name);
+    final messenger = tester.binding.defaultBinaryMessenger
+      ..setMockMethodCallHandler(
+        methodChannel,
+        (call) async => call.method == 'listen'
+            ? throw PlatformException(code: 'failed')
+            : null,
+      );
+    addTearDown(() => messenger.setMockMethodCallHandler(methodChannel, null));
+
+    await tester.pumpWidget(const FoldBridge(child: SizedBox()));
+    await tester.pump();
+
+    expect(tester.takeException(), isA<PlatformException>());
+  });
+
   testWidgets('reports nothing without a FoldBridge above', (tester) async {
     late FoldHinge? hinge;
     late FoldVerticalBarEdge edge;
