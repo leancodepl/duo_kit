@@ -19,6 +19,7 @@ import 'package:flutter/widgets.dart';
 /// See also [FoldHinge.maybeOf] and [FoldGeometry.verticalBarEdge].
 ///
 /// Place it above the app, so that overlays outside the navigator see it too.
+/// Use only one: every [FoldBridge] listens on the same native channel.
 /// On other platforms it passes [child] through.
 class FoldBridge extends StatefulWidget {
   /// Creates the bridge.
