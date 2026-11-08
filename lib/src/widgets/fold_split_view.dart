@@ -16,7 +16,9 @@ typedef FoldSplitViewBuilder =
 /// The fold itself is left empty. Across a vertical fold [first] takes the
 /// leading side; across a horizontal fold, the top. Each pane keeps only the
 /// padding and the view insets, such as the keyboard, of the edges of this
-/// widget it touches.
+/// widget it touches, and only the display features overlapping the pane, so
+/// [FoldGeometry.of] finds no fold there and routes of a [Navigator] in the
+/// pane open in it.
 ///
 /// The panes keep their state when the fold comes and goes, as long as
 /// [unfoldedBuilder] puts each of them in its layout once.
@@ -73,6 +75,7 @@ class _FoldSplitViewState extends State<FoldSplitView> {
       builder: (context, origin, size) =>
           switch (_findLocalFold(division, origin: origin, size: size)) {
             final fold? => _SplitPanes(
+              origin: origin,
               size: size,
               fold: fold.rect,
               axis: fold.axis,
@@ -232,9 +235,10 @@ class _WindowLayoutBuilderState extends State<_WindowLayoutBuilder> {
 }
 
 /// Lays [first] and [second] out on either side of [fold] in a [FoldSplitView]
-/// of [size], leaving the fold empty.
+/// of [size] at [origin] in the window, leaving the fold empty.
 class _SplitPanes extends StatelessWidget {
   const _SplitPanes({
+    required this.origin,
     required this.size,
     required this.fold,
     required this.axis,
@@ -242,6 +246,7 @@ class _SplitPanes extends StatelessWidget {
     required this.second,
   });
 
+  final Offset origin;
   final Size size;
   final Rect fold;
   final Axis axis;
@@ -280,7 +285,8 @@ class _SplitPanes extends StatelessWidget {
   }
 
   /// Keeps the padding and the view insets, such as the keyboard, only on the
-  /// edges of [bounds] the pane touches.
+  /// edges of [bounds] the pane touches, and the display features overlapping
+  /// the pane.
   Widget _buildPane(
     MediaQueryData mediaQuery, {
     required Rect pane,
@@ -291,6 +297,11 @@ class _SplitPanes extends StatelessWidget {
     final removeTop = pane.top > bounds.top;
     final removeRight = pane.right < bounds.right;
     final removeBottom = pane.bottom < bounds.bottom;
+
+    // As in DisplayFeatureSubScreen, so routes in the pane skip the fold.
+    final displayFeatures = mediaQuery.displayFeatures
+        .where((feature) => feature.bounds.shift(-origin).overlaps(pane))
+        .toList();
 
     return Positioned.fromRect(
       rect: pane,
@@ -307,7 +318,8 @@ class _SplitPanes extends StatelessWidget {
               removeTop: removeTop,
               removeRight: removeRight,
               removeBottom: removeBottom,
-            ),
+            )
+            .copyWith(displayFeatures: displayFeatures),
         child: child,
       ),
     );

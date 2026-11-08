@@ -199,7 +199,10 @@ FoldSplitView(
 While a fold crosses it, `FoldSplitView` puts `first` on the leading side of a
 vertical fold or above a horizontal one, and `second` on the other side. Each
 pane keeps only the padding and the view insets, such as the keyboard, of the
-edges it touches. Without a fold it uses your layout; put each pane in it once.
+edges it touches, and only the display features overlapping the pane: there
+`FoldGeometry.of` finds no fold, and a `Navigator` in the pane opens its dialogs
+and sheets in it (`showDialog` needs `useRootNavigator: false`). Without a fold
+it uses your layout; put each pane in it once.
 Decide when two panes fit with your own breakpoint.
 
 A pane your layout leaves out loses its state. To keep it, hide it instead:

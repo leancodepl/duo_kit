@@ -21,6 +21,7 @@ const _innerLongSide = 951.0;
 const _splitViewWindowWidth = 469.0;
 const _topBarHeight = 100.0;
 const _midTransition = Duration(milliseconds: 100);
+const _sheetHeight = 200.0;
 
 /// Platforms whose page transitions move the page below.
 const _routePlatforms = TargetPlatformVariant({
@@ -446,6 +447,89 @@ void main() {
     );
   });
 
+  testWidgets('keeps out of each pane the display features outside it', (
+    tester,
+  ) async {
+    final window = FoldTestPose.duoHalfOpenedLandscape.data;
+
+    await _pumpData(tester, window, _splitView);
+
+    final first = FoldGeometry.of(tester.element(find.byKey(_firstKey)));
+    final second = FoldGeometry.of(tester.element(find.byKey(_secondKey)));
+
+    expect(first.division, isNull);
+    expect(first.occlusions, isEmpty);
+    expect(second.division, isNull);
+    expect(
+      second.occlusions,
+      FoldGeometry.fromMediaQuery(window).occlusions,
+      reason: 'the status cluster lies in the second pane',
+    );
+  });
+
+  for (final (paneName, paneKey) in [
+    ('first', _firstKey),
+    ('second', _secondKey),
+  ]) {
+    testWidgets('opens a sheet from a navigator in the $paneName pane there', (
+      tester,
+    ) async {
+      final pageContext = await _pumpPaneNavigator(
+        tester,
+        FoldTestPose.duoHalfOpenedLandscape,
+        paneKey: paneKey,
+      );
+
+      unawaited(
+        showModalBottomSheet<void>(
+          context: pageContext,
+          builder: (context) => const SizedBox(height: _sheetHeight),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final pane = tester.getRect(find.byKey(paneKey));
+      final sheet = tester.getRect(find.byType(BottomSheet));
+
+      expect(
+        (sheet.left, sheet.right, sheet.bottom),
+        (pane.left, pane.right, pane.bottom),
+      );
+    });
+  }
+
+  testWidgets('opens a dialog from a navigator in a pane there', (
+    tester,
+  ) async {
+    final pageContext = await _pumpPaneNavigator(
+      tester,
+      FoldTestPose.duoHalfOpenedPortrait,
+      paneKey: _firstKey,
+    );
+
+    unawaited(
+      showDialog<void>(
+        context: pageContext,
+        useRootNavigator: false,
+        builder: (context) => const AlertDialog(title: Text('Delete draft?')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final pane = tester.getRect(find.byKey(_firstKey));
+    final dialog = tester.getRect(
+      find
+          .descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+
+    expect(dialog.isEmpty, isFalse);
+    expect(dialog.intersect(pane), dialog);
+  });
+
   testWidgets('keeps the state of the panes when the fold comes and goes', (
     tester,
   ) async {
@@ -586,6 +670,37 @@ Future<void> _pumpApp(
   );
   await tester.pump();
 }
+
+/// Pumps an app whose split view holds a navigator in the pane of [paneKey],
+/// and returns the context of the navigator's first page.
+Future<BuildContext> _pumpPaneNavigator(
+  WidgetTester tester,
+  FoldTestPose pose, {
+  required Key paneKey,
+}) async {
+  await _pumpApp(
+    tester,
+    pose,
+    FoldSplitView(
+      first: _buildPane(_firstKey, hasNavigator: paneKey == _firstKey),
+      second: _buildPane(_secondKey, hasNavigator: paneKey == _secondKey),
+      unfoldedBuilder: _buildRow,
+    ),
+  );
+
+  return tester.element(find.byKey(_homeKey));
+}
+
+Widget _buildPane(Key key, {required bool hasNavigator}) => KeyedSubtree(
+  key: key,
+  child: hasNavigator
+      ? Navigator(
+          onGenerateRoute: (settings) => MaterialPageRoute<void>(
+            builder: (context) => const SizedBox.expand(key: _homeKey),
+          ),
+        )
+      : const SizedBox.expand(),
+);
 
 EdgeInsets _getPaddingOf(WidgetTester tester, Key key) =>
     MediaQuery.paddingOf(tester.element(find.byKey(key)));
