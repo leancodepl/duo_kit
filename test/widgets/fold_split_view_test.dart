@@ -1,13 +1,16 @@
+import 'dart:async';
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
 import 'package:duo_kit/duo_kit.dart';
 import 'package:duo_kit/testing.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart' show CupertinoSheetRoute;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _firstKey = ValueKey('first');
 const _secondKey = ValueKey('second');
 const _unfoldedKey = ValueKey('unfolded');
+const _homeKey = ValueKey('home');
 
 /// Where the fold of the inner display starts and ends, from its top or left
 /// edge.
@@ -16,6 +19,15 @@ const _foldEnd = 495.5;
 const _innerShortSide = 669.0;
 const _innerLongSide = 951.0;
 const _splitViewWindowWidth = 469.0;
+const _topBarHeight = 100.0;
+const _midTransition = Duration(milliseconds: 100);
+const _sheetHeight = 200.0;
+
+/// Platforms whose page transitions move the page below.
+const _routePlatforms = TargetPlatformVariant({
+  TargetPlatform.iOS,
+  TargetPlatform.android,
+});
 
 /// The window of the app on the left of Split View, half open, with the fold
 /// at its right edge. Measured on the iPhone Duo simulator (iOS 27.1).
@@ -306,6 +318,218 @@ void main() {
     );
   });
 
+  testWidgets('goes idle on a kept-alive page scrolled out of view', (
+    tester,
+  ) async {
+    final controller = PageController();
+    addTearDown(controller.dispose);
+
+    await _pumpPose(
+      tester,
+      FoldTestPose.duoHalfOpenedLandscape,
+      PageView(
+        controller: controller,
+        children: const [
+          _KeptAlive(child: _splitView),
+          SizedBox.expand(),
+        ],
+      ),
+    );
+
+    controller.jumpToPage(1);
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.binding.hasScheduledFrame, isFalse);
+
+    controller.jumpToPage(0);
+    await tester.pump();
+
+    expect(
+      tester.getRect(find.byKey(_firstKey)),
+      const Rect.fromLTRB(0, 0, _foldStart, _innerShortSide),
+    );
+  });
+
+  testWidgets(
+    'splits in place when a route above it closes after the device folded',
+    variant: _routePlatforms,
+    (tester) async {
+      await _pumpApp(tester, FoldTestPose.duoInnerLandscape, _splitView);
+
+      final navigator = Navigator.of(tester.element(find.byKey(_unfoldedKey)));
+      unawaited(
+        navigator.push(
+          MaterialPageRoute<void>(builder: (context) => const SizedBox()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await _pumpApp(tester, FoldTestPose.duoHalfOpenedLandscape, _splitView);
+      await tester.pumpAndSettle();
+
+      navigator.pop();
+      await tester.pump();
+      await tester.pump(_midTransition);
+
+      // The page still moves, with its panes laid out as they will rest.
+      expect(
+        tester.getSize(find.byKey(_firstKey)),
+        const Size(_foldStart, _innerShortSide),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getRect(find.byKey(_firstKey)),
+        const Rect.fromLTRB(0, 0, _foldStart, _innerShortSide),
+      );
+    },
+  );
+
+  testWidgets(
+    'splits in place while its route comes in',
+    variant: _routePlatforms,
+    (tester) async {
+      await _pumpApp(
+        tester,
+        FoldTestPose.duoHalfOpenedPortrait,
+        const SizedBox.expand(key: _homeKey),
+      );
+
+      final navigator = Navigator.of(tester.element(find.byKey(_homeKey)));
+      unawaited(
+        navigator.push(
+          MaterialPageRoute<void>(
+            builder: (context) => const Column(
+              children: [
+                SizedBox(height: _topBarHeight),
+                Expanded(child: _splitView),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(_midTransition);
+
+      expect(
+        tester.getSize(find.byKey(_firstKey)),
+        const Size(_innerShortSide, _foldStart - _topBarHeight),
+      );
+    },
+  );
+
+  testWidgets('splits in place on a route that rests lower, as a sheet', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      FoldTestPose.duoHalfOpenedPortrait,
+      const SizedBox.expand(key: _homeKey),
+    );
+
+    final navigator = Navigator.of(tester.element(find.byKey(_homeKey)));
+    unawaited(
+      navigator.push(
+        CupertinoSheetRoute<void>(builder: (context) => _splitView),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final sheetTop = tester.getTopLeft(find.byType(FoldSplitView)).dy;
+
+    expect(sheetTop, greaterThan(0));
+    expect(
+      tester.getRect(find.byKey(_firstKey)),
+      Rect.fromLTRB(0, sheetTop, _innerShortSide, _foldStart),
+    );
+  });
+
+  testWidgets('keeps out of each pane the display features outside it', (
+    tester,
+  ) async {
+    final window = FoldTestPose.duoHalfOpenedLandscape.data;
+
+    await _pumpData(tester, window, _splitView);
+
+    final first = FoldGeometry.of(tester.element(find.byKey(_firstKey)));
+    final second = FoldGeometry.of(tester.element(find.byKey(_secondKey)));
+
+    expect(first.division, isNull);
+    expect(first.occlusions, isEmpty);
+    expect(second.division, isNull);
+    expect(
+      second.occlusions,
+      FoldGeometry.fromMediaQuery(window).occlusions,
+      reason: 'the status cluster lies in the second pane',
+    );
+  });
+
+  for (final (paneName, paneKey) in [
+    ('first', _firstKey),
+    ('second', _secondKey),
+  ]) {
+    testWidgets('opens a sheet from a navigator in the $paneName pane there', (
+      tester,
+    ) async {
+      final pageContext = await _pumpPaneNavigator(
+        tester,
+        FoldTestPose.duoHalfOpenedLandscape,
+        paneKey: paneKey,
+      );
+
+      unawaited(
+        showModalBottomSheet<void>(
+          context: pageContext,
+          builder: (context) => const SizedBox(height: _sheetHeight),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final pane = tester.getRect(find.byKey(paneKey));
+      final sheet = tester.getRect(find.byType(BottomSheet));
+
+      expect(
+        (sheet.left, sheet.right, sheet.bottom),
+        (pane.left, pane.right, pane.bottom),
+      );
+    });
+  }
+
+  testWidgets('opens a dialog from a navigator in a pane there', (
+    tester,
+  ) async {
+    final pageContext = await _pumpPaneNavigator(
+      tester,
+      FoldTestPose.duoHalfOpenedPortrait,
+      paneKey: _firstKey,
+    );
+
+    unawaited(
+      showDialog<void>(
+        context: pageContext,
+        useRootNavigator: false,
+        builder: (context) => const AlertDialog(title: Text('Delete draft?')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final pane = tester.getRect(find.byKey(_firstKey));
+    final dialog = tester.getRect(
+      find
+          .descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+
+    expect(dialog.isEmpty, isFalse);
+    expect(dialog.intersect(pane), dialog);
+  });
+
   testWidgets('keeps the state of the panes when the fold comes and goes', (
     tester,
   ) async {
@@ -371,6 +595,29 @@ class _StatefulPaneState extends State<_StatefulPane> {
   Widget build(BuildContext context) => const SizedBox.expand();
 }
 
+/// Keeps [child] alive while its page is scrolled out of view.
+class _KeptAlive extends StatefulWidget {
+  const _KeptAlive({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeptAlive> createState() => _KeptAliveState();
+}
+
+class _KeptAliveState extends State<_KeptAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    return widget.child;
+  }
+}
+
 /// Pumps [child] in a window of [pose], then once more for the split view to
 /// pick up where it sits.
 Future<void> _pumpPose(
@@ -401,6 +648,59 @@ Future<void> _pumpData(
   );
   await tester.pump();
 }
+
+/// Pumps [home] as the first route of an app in a window of [pose], then once
+/// more for the split view to pick up where it sits.
+Future<void> _pumpApp(
+  WidgetTester tester,
+  FoldTestPose pose,
+  Widget home,
+) async {
+  tester.view
+    ..physicalSize = pose.data.size
+    ..devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    MaterialApp(
+      builder: (context, child) =>
+          MediaQuery(data: pose.data, child: child ?? const SizedBox()),
+      home: home,
+    ),
+  );
+  await tester.pump();
+}
+
+/// Pumps an app whose split view holds a navigator in the pane of [paneKey],
+/// and returns the context of the navigator's first page.
+Future<BuildContext> _pumpPaneNavigator(
+  WidgetTester tester,
+  FoldTestPose pose, {
+  required Key paneKey,
+}) async {
+  await _pumpApp(
+    tester,
+    pose,
+    FoldSplitView(
+      first: _buildPane(_firstKey, hasNavigator: paneKey == _firstKey),
+      second: _buildPane(_secondKey, hasNavigator: paneKey == _secondKey),
+      unfoldedBuilder: _buildRow,
+    ),
+  );
+
+  return tester.element(find.byKey(_homeKey));
+}
+
+Widget _buildPane(Key key, {required bool hasNavigator}) => KeyedSubtree(
+  key: key,
+  child: hasNavigator
+      ? Navigator(
+          onGenerateRoute: (settings) => MaterialPageRoute<void>(
+            builder: (context) => const SizedBox.expand(key: _homeKey),
+          ),
+        )
+      : const SizedBox.expand(),
+);
 
 EdgeInsets _getPaddingOf(WidgetTester tester, Key key) =>
     MediaQuery.paddingOf(tester.element(find.byKey(key)));

@@ -19,7 +19,9 @@ import 'package:flutter/widgets.dart';
 /// See also [FoldHinge.maybeOf] and [FoldGeometry.verticalBarEdge].
 ///
 /// Place it above the app, so that overlays outside the navigator see it too.
-/// On other platforms it passes [child] through.
+/// Use only one: every [FoldBridge] listens on the same native channel.
+/// On other platforms, on devices without a hinge, and without the plugin (as
+/// in tests), it passes [child] through.
 class FoldBridge extends StatefulWidget {
   /// Creates the bridge.
   const FoldBridge({super.key, required this.child});
@@ -32,9 +34,12 @@ class FoldBridge extends StatefulWidget {
 }
 
 class _FoldBridgeState extends State<FoldBridge> {
-  static const _channel = EventChannel('duo_kit/state');
+  /// Read by hand: [EventChannel] reports a missing plugin as an error.
+  static const _channel = OptionalMethodChannel('duo_kit/state');
 
-  StreamSubscription<Object?>? _subscription;
+  /// The listening bridge, as a new one starts before the old one is disposed.
+  static _FoldBridgeState? _listener;
+
   var _state = _NativeState.none;
 
   (List<DisplayFeature>, _NativeState)? _featuresKey;
@@ -45,25 +50,52 @@ class _FoldBridgeState extends State<FoldBridge> {
     super.initState();
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      _subscription = _channel.receiveBroadcastStream().listen(
-        _onMessage,
-        onError: (Object error, StackTrace stack) => FlutterError.reportError(
-          FlutterErrorDetails(
-            exception: error,
-            stack: stack,
-            library: 'duo_kit',
-            context: ErrorDescription('while reading the native state'),
-          ),
-        ),
-      );
+      _listener = this;
+      _channel.binaryMessenger.setMessageHandler(_channel.name, _onEnvelope);
+      unawaited(_invoke('listen'));
     }
   }
 
   @override
   void dispose() {
-    unawaited(_subscription?.cancel());
+    if (_listener == this) {
+      _listener = null;
+      _channel.binaryMessenger.setMessageHandler(_channel.name, null);
+      unawaited(_invoke('cancel'));
+    }
+
     super.dispose();
   }
+
+  Future<void> _invoke(String method) async {
+    try {
+      await _channel.invokeMethod<void>(method);
+    } catch (err, st) {
+      _reportError(err, st);
+    }
+  }
+
+  Future<ByteData?> _onEnvelope(ByteData? envelope) async {
+    // A null envelope ends the stream, which the plugin never does.
+    if (envelope != null) {
+      try {
+        _onMessage(_channel.codec.decodeEnvelope(envelope));
+      } on PlatformException catch (e, st) {
+        _reportError(e, st);
+      }
+    }
+
+    return null;
+  }
+
+  void _reportError(Object error, StackTrace stack) => FlutterError.reportError(
+    FlutterErrorDetails(
+      exception: error,
+      stack: stack,
+      library: 'duo_kit',
+      context: ErrorDescription('while reading the native state'),
+    ),
+  );
 
   void _onMessage(Object? message) {
     if (message is! Map<Object?, Object?>) {

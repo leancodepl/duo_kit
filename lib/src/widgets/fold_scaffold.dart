@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:duo_kit/src/bridge/fold_vertical_bar_edge.dart';
 import 'package:duo_kit/src/geometry/fold_geometry.dart';
 import 'package:duo_kit/src/geometry/fold_strip.dart';
 import 'package:flutter/widgets.dart';
@@ -9,11 +10,11 @@ enum FoldNavigationPlacement {
   /// Along the bottom edge of the window.
   bottom,
 
-  /// In the strip the system keeps along the left edge, as on the cover
-  /// display of iPhone Duo in landscape with the camera on the left.
+  /// In a strip along the left edge, as on the cover display of iPhone Duo in
+  /// landscape with the camera on the left.
   left,
 
-  /// In the strip the system keeps along the right edge.
+  /// In a strip along the right edge.
   right;
 
   /// The direction to lay the navigation items out in.
@@ -30,10 +31,15 @@ typedef FoldNavigationBuilder =
 /// Lays [body] out with the navigation from [navigationBuilder] either along
 /// the bottom edge or, where the window has a [FoldStrip], in that strip.
 ///
+/// Where the system wants its vertical bar on an edge with no room for it, as
+/// on the left of Split View, the navigation takes [verticalBarWidth] there.
+///
 /// Draws nothing itself. The navigation gets the [MediaQuery] padding of the
 /// area it sits in: the bottom inset at the bottom, and in the strip the
 /// clearances of the camera and status cluster plus the bottom inset. The
-/// body loses the padding of the edge the navigation takes.
+/// body loses the padding of the edge the navigation takes. While the keyboard
+/// covers the navigation at the bottom, the body reaches behind it, so a
+/// `Scaffold` in the body ends above the keyboard and the navigation.
 ///
 /// Its left and right edges must meet the edges of the window, which is where
 /// a strip lies.
@@ -44,7 +50,11 @@ class FoldScaffold extends StatelessWidget {
     required this.body,
     required this.navigationBuilder,
     this.detectStrip,
+    this.verticalBarWidth = defaultVerticalBarWidth,
   });
+
+  /// The width of the strip the system keeps on iPhone Duo.
+  static const defaultVerticalBarWidth = 84.0;
 
   /// The content next to the navigation.
   final Widget body;
@@ -52,13 +62,20 @@ class FoldScaffold extends StatelessWidget {
   /// Builds the navigation for where it goes.
   final FoldNavigationBuilder navigationBuilder;
 
-  /// See [FoldGeometry.of].
+  /// See [FoldGeometry.of]. Does not turn off [verticalBarWidth].
   final bool? detectStrip;
+
+  /// The width of the navigation on the edge of [FoldGeometry.verticalBarEdge]
+  /// where the window has no strip, or null to keep it at the bottom there.
+  final double? verticalBarWidth;
 
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final strip = FoldGeometry.of(context, detectStrip: detectStrip).strip;
+    final geometry = FoldGeometry.of(context, detectStrip: detectStrip);
+    final strip =
+        geometry.strip ??
+        _getVerticalBarStrip(geometry, Directionality.of(context));
 
     final placement = switch (strip?.side) {
       FoldStripSide.left => FoldNavigationPlacement.left,
@@ -78,7 +95,11 @@ class FoldScaffold extends StatelessWidget {
     // The same children in every pose, so the body keeps its state when the
     // navigation moves.
     return CustomMultiChildLayout(
-      delegate: _FoldScaffoldLayout(placement: placement, strip: strip),
+      delegate: _FoldScaffoldLayout(
+        placement: placement,
+        strip: strip,
+        keyboardHeight: mediaQuery.viewInsets.bottom,
+      ),
       children: [
         LayoutId(
           id: _FoldScaffoldSlot.body,
@@ -95,6 +116,51 @@ class FoldScaffold extends StatelessWidget {
     );
   }
 
+  /// A strip for the vertical bar where the window has no room for it.
+  FoldStrip? _getVerticalBarStrip(
+    FoldGeometry geometry,
+    TextDirection direction,
+  ) {
+    final side = switch ((geometry.verticalBarEdge, direction)) {
+      (FoldVerticalBarEdge.unspecified, _) => null,
+      (FoldVerticalBarEdge.leading, TextDirection.ltr) ||
+      (FoldVerticalBarEdge.trailing, TextDirection.rtl) => FoldStripSide.left,
+      (FoldVerticalBarEdge.leading, TextDirection.rtl) ||
+      (FoldVerticalBarEdge.trailing, TextDirection.ltr) => FoldStripSide.right,
+    };
+
+    // While the device folds or rotates, the edge can change a moment before
+    // the window does. No window with a vertical bar has a top inset.
+    final EdgeInsets(:left, :right, :top) = geometry.viewPadding;
+    final hasRoom = switch (side) {
+      FoldStripSide.left => left > 0,
+      FoldStripSide.right => right > 0,
+      null => true,
+    };
+    final width = verticalBarWidth;
+    if (side == null || width == null || hasRoom || top > 0) {
+      return null;
+    }
+
+    final size = geometry.size;
+
+    return FoldStrip(
+      side: side,
+      rect: switch (side) {
+        FoldStripSide.left => Rect.fromLTWH(0, 0, width, size.height),
+        FoldStripSide.right => Rect.fromLTWH(
+          size.width - width,
+          0,
+          width,
+          size.height,
+        ),
+      },
+      topClearance: 0,
+      bottomClearance: 0,
+      isClearanceEstimated: false,
+    );
+  }
+
   MediaQueryData _getStripData(MediaQueryData mediaQuery, FoldStrip strip) {
     final padding = EdgeInsets.only(
       top: strip.topClearance,
@@ -108,10 +174,15 @@ class FoldScaffold extends StatelessWidget {
 enum _FoldScaffoldSlot { body, navigation }
 
 class _FoldScaffoldLayout extends MultiChildLayoutDelegate {
-  _FoldScaffoldLayout({required this.placement, required this.strip});
+  _FoldScaffoldLayout({
+    required this.placement,
+    required this.strip,
+    required this.keyboardHeight,
+  });
 
   final FoldNavigationPlacement placement;
   final FoldStrip? strip;
+  final double keyboardHeight;
 
   @override
   void performLayout(Size size) {
@@ -127,14 +198,19 @@ class _FoldScaffoldLayout extends MultiChildLayoutDelegate {
             maxHeight: size.height,
           ),
         );
-        final bodyHeight = size.height - navigation.height;
+        // The body takes back the part of the navigation the keyboard covers.
+        final bodyHeight =
+            size.height - math.max(0.0, navigation.height - keyboardHeight);
 
         layoutChild(
           _FoldScaffoldSlot.body,
           BoxConstraints.tight(Size(size.width, bodyHeight)),
         );
         positionChild(_FoldScaffoldSlot.body, Offset.zero);
-        positionChild(_FoldScaffoldSlot.navigation, Offset(0, bodyHeight));
+        positionChild(
+          _FoldScaffoldSlot.navigation,
+          Offset(0, size.height - navigation.height),
+        );
       case FoldNavigationPlacement.left || FoldNavigationPlacement.right:
         final isLeft = placement == FoldNavigationPlacement.left;
         final bodySize = Size(size.width - stripWidth, size.height);
@@ -157,5 +233,7 @@ class _FoldScaffoldLayout extends MultiChildLayoutDelegate {
 
   @override
   bool shouldRelayout(_FoldScaffoldLayout oldDelegate) =>
-      oldDelegate.placement != placement || oldDelegate.strip != strip;
+      oldDelegate.placement != placement ||
+      oldDelegate.strip != strip ||
+      oldDelegate.keyboardHeight != keyboardHeight;
 }

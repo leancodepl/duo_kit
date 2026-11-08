@@ -53,8 +53,9 @@ parts of that which are easy to miss:
   cluster of iPhone Duo to `MediaQuery`, and reports the hinge.
 - **`FoldGeometry`** – the strip, the fold and the occlusions of the window,
   computed from `MediaQuery`.
-- **`FoldScaffold`** – puts your navigation along the bottom edge or, where the
-  window has a strip, in the strip, and pads the body to match.
+- **`FoldScaffold`** – puts your navigation along the bottom edge or in the
+  strip, also where iOS wants a strip but leaves no room for it, and pads the
+  body to match.
 - **`FoldSplitView`** – lays two panes out on either side of a fold, with your
   own layout while there is none, and keeps their state when the fold comes and
   goes.
@@ -83,8 +84,8 @@ Material apps on iOS.
 flutter pub add duo_kit
 ```
 
-duo_kit has iOS code, so an iOS app needs iOS 15.0 or later as its deployment
-target, in the Runner target and in its pods.
+duo_kit supports the iOS versions Flutter does. To see the fold on iPhone Duo,
+follow the [iPhone Duo setup](#iphone-duo-setup).
 
 ## Where the geometry comes from
 
@@ -99,7 +100,8 @@ duo_kit reads `MediaQuery.viewPadding` and `MediaQuery.displayFeatures`:
   ```
 
   Place it above your app, so that overlays outside the navigator see the fold
-  too. On other platforms it passes its child through.
+  too, and use only one. On other platforms and on devices without a hinge it
+  passes its child through.
 
   With the fold published, Flutter keeps dialogs, sheets and pickers on one side
   of it while the device is half open, as it does on Android.
@@ -165,14 +167,21 @@ FoldScaffold(
 The navigation gets the `MediaQuery` padding of where it sits – the bottom
 inset, or in the strip the room taken by the camera and the status cluster – so
 a `SafeArea` inside it keeps it clear. The body stays the same widget in every
-pose and keeps its state.
+pose and keeps its state. While the keyboard is up, a `Scaffold` in the body
+ends above the keyboard and the navigation, as it does above a Material
+`bottomNavigationBar`.
 
 ![The navigation in the strip of the cover display, below the status cluster, and along the bottom edge of the inner display in portrait][navigation-img]
 
 In a strip, `placement` is `left` or `right`, the side the strip runs along. On
-iPhone Duo it is `left` only on the cover display in landscape, with the camera
-on the left. Put whatever faces the content, such as a divider or a selection
-indicator, on the edge towards the body.
+iPhone Duo it is `left` on the cover display in landscape with the camera on the
+left, and on the left of Split View. Put whatever faces the content, such as a
+divider or a selection indicator, on the edge towards the body.
+
+On the left of Split View iOS wants its vertical bar on the left but leaves a
+Flutter app no room for it, so `FoldScaffold` takes `verticalBarWidth` there,
+84 points by default like the strip on the right. Pass `null` to keep the
+navigation at the bottom.
 
 ### Two panes
 
@@ -192,7 +201,10 @@ FoldSplitView(
 While a fold crosses it, `FoldSplitView` puts `first` on the leading side of a
 vertical fold or above a horizontal one, and `second` on the other side. Each
 pane keeps only the padding and the view insets, such as the keyboard, of the
-edges it touches. Without a fold it uses your layout; put each pane in it once.
+edges it touches, and only the display features overlapping the pane: there
+`FoldGeometry.of` finds no fold, and a `Navigator` in the pane opens its dialogs
+and sheets in it (`showDialog` needs `useRootNavigator: false`). Without a fold
+it uses your layout; put each pane in it once.
 Decide when two panes fit with your own breakpoint.
 
 A pane your layout leaves out loses its state. To keep it, hide it instead:
@@ -260,6 +272,18 @@ import 'package:duo_kit/testing.dart';
 MediaQuery(data: FoldTestPose.duoHalfOpenedLandscape.data, child: screen)
 ```
 
+`FoldBridgeScope` stands in for what `FoldBridge` reports, such as the edge of
+the vertical bar on the left of Split View:
+
+```dart
+FoldBridgeScope(
+  verticalBarEdge: FoldVerticalBarEdge.leading,
+  child: MediaQuery(
+    data: FoldTestPose.duoInnerSplitViewLeft.data,
+    child: screen,
+  ),
+)
+```
 
 ## Limitations
 
@@ -267,10 +291,13 @@ MediaQuery(data: FoldTestPose.duoHalfOpenedLandscape.data, child: screen)
   report the same insets for its camera cutout. Pass `detectStrip` to change
   that.
 - Apple's [guidelines for iPhone Duo][hig-duo] put the strip on the left for
-  the app on the left of Split View, but iOS 27.1 reports no strip to a Flutter
-  app there, so its navigation stays at the bottom.
+  the app on the left of Split View, but iOS 27.1 reserves no room for it in a
+  Flutter app. `FoldScaffold` makes the room itself, while
+  `FoldGeometry.strip` stays null there. Right-to-left layouts are untested.
 - `FoldSplitView` measures where it sits after it builds, resizes or scrolls,
-  and catches up one frame later.
+  and catches up one frame later. During a page transition it is laid out as
+  where its page comes to rest, and moves with the page. On a route that rests
+  elsewhere, such as a Cupertino sheet, it catches up when the transition ends.
 - While the device rotates, folds or unfolds, the reserved regions can lead the
   size of the window by a frame or two.
 - Tested on the iPhone Duo simulator with iOS 27.1. Android foldables follow

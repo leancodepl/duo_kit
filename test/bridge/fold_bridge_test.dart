@@ -82,6 +82,53 @@ void main() {
     expect(features, isEmpty);
   });
 
+  testWidgets('passes its child through without the plugin', variant: _ios, (
+    tester,
+  ) async {
+    // The engine answers nothing on a channel without a plugin.
+    final messenger = tester.binding.defaultBinaryMessenger
+      ..setMockMessageHandler(_channel.name, (message) async => null);
+    addTearDown(() => messenger.setMockMessageHandler(_channel.name, null));
+
+    late List<DisplayFeature> features;
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(),
+        child: FoldBridge(
+          child: Builder(
+            builder: (context) {
+              features = MediaQuery.displayFeaturesOf(context);
+
+              return const SizedBox();
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpWidget(const SizedBox());
+
+    expect(features, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reports an error of the plugin', variant: _ios, (tester) async {
+    final methodChannel = MethodChannel(_channel.name);
+    final messenger = tester.binding.defaultBinaryMessenger
+      ..setMockMethodCallHandler(
+        methodChannel,
+        (call) async => call.method == 'listen'
+            ? throw PlatformException(code: 'failed')
+            : null,
+      );
+    addTearDown(() => messenger.setMockMethodCallHandler(methodChannel, null));
+
+    await tester.pumpWidget(const FoldBridge(child: SizedBox()));
+    await tester.pump();
+
+    expect(tester.takeException(), isA<PlatformException>());
+  });
+
   testWidgets('reports nothing without a FoldBridge above', (tester) async {
     late FoldHinge? hinge;
     late FoldVerticalBarEdge edge;
@@ -221,6 +268,26 @@ void main() {
     },
   );
 
+  testWidgets('keeps listening when it is mounted again', variant: _ios, (
+    tester,
+  ) async {
+    await _pumpBridge(tester, FoldTestPose.duoCover.data, key: const Key('1'));
+    // A new key, as when an app starts over after a logout.
+    final probe = await _pumpBridge(
+      tester,
+      FoldTestPose.duoCover.data,
+      key: const Key('2'),
+    );
+
+    await probe.send(_closedCoverMessage);
+
+    expect(probe.isCancelled, isFalse);
+    expect(
+      probe.hinge,
+      const FoldHinge(status: FoldHingeStatus.closed, angle: 0),
+    );
+  });
+
   testWidgets('keeps the display features of the platform', variant: _ios, (
     tester,
   ) async {
@@ -268,6 +335,7 @@ class _Probe {
   late FoldHinge? hinge;
   late List<DisplayFeature> features;
   int hingeBuilds = 0;
+  bool isCancelled = false;
 
   /// Sends [message] from the native side, then pumps a frame for it to
   /// arrive and one for the widgets to rebuild.
@@ -278,9 +346,13 @@ class _Probe {
   }
 }
 
-/// Pumps a [FoldBridge] in a window described by [data], with a mocked native
-/// side.
-Future<_Probe> _pumpBridge(WidgetTester tester, MediaQueryData data) async {
+/// Pumps a [FoldBridge] with [key] in a window described by [data], with a
+/// mocked native side.
+Future<_Probe> _pumpBridge(
+  WidgetTester tester,
+  MediaQueryData data, {
+  Key? key,
+}) async {
   final probe = _Probe(tester);
   final messenger = tester.binding.defaultBinaryMessenger
     ..setMockStreamHandler(
@@ -289,6 +361,7 @@ Future<_Probe> _pumpBridge(WidgetTester tester, MediaQueryData data) async {
         onListen: (arguments, events) {
           probe._sink = events;
         },
+        onCancel: (arguments) => probe.isCancelled = true,
       ),
     );
   addTearDown(() => messenger.setMockStreamHandler(_channel, null));
@@ -297,6 +370,7 @@ Future<_Probe> _pumpBridge(WidgetTester tester, MediaQueryData data) async {
     MediaQuery(
       data: data,
       child: FoldBridge(
+        key: key,
         child: Column(
           children: [
             Builder(

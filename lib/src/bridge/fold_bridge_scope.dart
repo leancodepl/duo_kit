@@ -14,12 +14,15 @@ enum FoldBridgeAspect {
 }
 
 /// The state of a [FoldBridge], for [FoldHinge.maybeOf] and [FoldGeometry.of].
+///
+/// In tests, put one above the widget under test to fake what the bridge
+/// reports.
 class FoldBridgeScope extends InheritedModel<FoldBridgeAspect> {
   /// Creates the scope.
   const FoldBridgeScope({
     super.key,
-    required this.hinge,
-    required this.verticalBarEdge,
+    this.hinge,
+    this.verticalBarEdge = FoldVerticalBarEdge.unspecified,
     required super.child,
   });
 
