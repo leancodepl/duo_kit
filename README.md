@@ -167,7 +167,9 @@ FoldScaffold(
 The navigation gets the `MediaQuery` padding of where it sits – the bottom
 inset, or in the strip the room taken by the camera and the status cluster – so
 a `SafeArea` inside it keeps it clear. The body stays the same widget in every
-pose and keeps its state.
+pose and keeps its state. While the keyboard is up, a `Scaffold` in the body
+ends above the keyboard and the navigation, as it does above a Material
+`bottomNavigationBar`.
 
 ![The navigation in the strip of the cover display, below the status cluster, and along the bottom edge of the inner display in portrait][navigation-img]
 

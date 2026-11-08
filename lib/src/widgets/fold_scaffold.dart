@@ -37,7 +37,9 @@ typedef FoldNavigationBuilder =
 /// Draws nothing itself. The navigation gets the [MediaQuery] padding of the
 /// area it sits in: the bottom inset at the bottom, and in the strip the
 /// clearances of the camera and status cluster plus the bottom inset. The
-/// body loses the padding of the edge the navigation takes.
+/// body loses the padding of the edge the navigation takes. While the keyboard
+/// covers the navigation at the bottom, the body reaches behind it, so a
+/// `Scaffold` in the body ends above the keyboard and the navigation.
 ///
 /// Its left and right edges must meet the edges of the window, which is where
 /// a strip lies.
@@ -93,7 +95,11 @@ class FoldScaffold extends StatelessWidget {
     // The same children in every pose, so the body keeps its state when the
     // navigation moves.
     return CustomMultiChildLayout(
-      delegate: _FoldScaffoldLayout(placement: placement, strip: strip),
+      delegate: _FoldScaffoldLayout(
+        placement: placement,
+        strip: strip,
+        keyboardHeight: mediaQuery.viewInsets.bottom,
+      ),
       children: [
         LayoutId(
           id: _FoldScaffoldSlot.body,
@@ -168,10 +174,15 @@ class FoldScaffold extends StatelessWidget {
 enum _FoldScaffoldSlot { body, navigation }
 
 class _FoldScaffoldLayout extends MultiChildLayoutDelegate {
-  _FoldScaffoldLayout({required this.placement, required this.strip});
+  _FoldScaffoldLayout({
+    required this.placement,
+    required this.strip,
+    required this.keyboardHeight,
+  });
 
   final FoldNavigationPlacement placement;
   final FoldStrip? strip;
+  final double keyboardHeight;
 
   @override
   void performLayout(Size size) {
@@ -187,14 +198,19 @@ class _FoldScaffoldLayout extends MultiChildLayoutDelegate {
             maxHeight: size.height,
           ),
         );
-        final bodyHeight = size.height - navigation.height;
+        // The body takes back the part of the navigation the keyboard covers.
+        final bodyHeight =
+            size.height - math.max(0.0, navigation.height - keyboardHeight);
 
         layoutChild(
           _FoldScaffoldSlot.body,
           BoxConstraints.tight(Size(size.width, bodyHeight)),
         );
         positionChild(_FoldScaffoldSlot.body, Offset.zero);
-        positionChild(_FoldScaffoldSlot.navigation, Offset(0, bodyHeight));
+        positionChild(
+          _FoldScaffoldSlot.navigation,
+          Offset(0, size.height - navigation.height),
+        );
       case FoldNavigationPlacement.left || FoldNavigationPlacement.right:
         final isLeft = placement == FoldNavigationPlacement.left;
         final bodySize = Size(size.width - stripWidth, size.height);
@@ -217,5 +233,7 @@ class _FoldScaffoldLayout extends MultiChildLayoutDelegate {
 
   @override
   bool shouldRelayout(_FoldScaffoldLayout oldDelegate) =>
-      oldDelegate.placement != placement || oldDelegate.strip != strip;
+      oldDelegate.placement != placement ||
+      oldDelegate.strip != strip ||
+      oldDelegate.keyboardHeight != keyboardHeight;
 }

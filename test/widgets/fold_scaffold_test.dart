@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:duo_kit/duo_kit.dart';
 import 'package:duo_kit/testing.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _bodyKey = ValueKey('body');
+const _contentKey = ValueKey('content');
 const _navigationKey = ValueKey('navigation');
 const _navigationHeight = 60.0;
 
@@ -191,6 +194,28 @@ void main() {
     },
   );
 
+  for (final (keyboardHeight, contentBottom) in [
+    (300.0, 951 - 300.0),
+    // While the keyboard comes up, the navigation still shows above it.
+    (40.0, 951 - _navigationHeight),
+  ]) {
+    testWidgets(
+      'ends a Scaffold in the body above a keyboard of $keyboardHeight and '
+      'the navigation at the bottom',
+      variant: _ios,
+      (tester) async {
+        await _pumpScaffold(
+          tester,
+          _showKeyboard(FoldTestPose.duoInnerPortrait.data, keyboardHeight),
+          body: const Scaffold(body: SizedBox.expand(key: _contentKey)),
+        );
+
+        expect(tester.getRect(find.byKey(_contentKey)).bottom, contentBottom);
+        expect(tester.getRect(find.byKey(_navigationKey)).bottom, 951);
+      },
+    );
+  }
+
   testWidgets('keeps the body state when the navigation moves', variant: _ios, (
     tester,
   ) async {
@@ -228,6 +253,7 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
   FoldVerticalBarEdge verticalBarEdge = FoldVerticalBarEdge.unspecified,
   TextDirection textDirection = TextDirection.ltr,
   double? verticalBarWidth = FoldScaffold.defaultVerticalBarWidth,
+  Widget body = const _StatefulBody(key: _bodyKey),
 }) async {
   final placements = <FoldNavigationPlacement>[];
 
@@ -246,7 +272,7 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
           child: FoldScaffold(
             detectStrip: detectStrip,
             verticalBarWidth: verticalBarWidth,
-            body: const _StatefulBody(key: _bodyKey),
+            body: body,
             navigationBuilder: (context, placement) {
               placements.add(placement);
 
@@ -266,6 +292,16 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
 
   return placements;
 }
+
+/// [data] with a keyboard of [height] up, which takes over the bottom inset as
+/// on iOS.
+MediaQueryData _showKeyboard(MediaQueryData data, double height) =>
+    data.copyWith(
+      viewInsets: EdgeInsets.only(bottom: height),
+      padding: data.padding.copyWith(
+        bottom: math.max(0, data.viewPadding.bottom - height),
+      ),
+    );
 
 EdgeInsets _getPaddingOf(WidgetTester tester, Key key) =>
     MediaQuery.paddingOf(tester.element(find.byKey(key)));
