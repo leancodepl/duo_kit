@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'duo_kit'
-  s.version          = '0.1.2'
+  s.version          = '0.2.0'
   s.summary          = 'iPhone Duo and foldable layouts for Flutter.'
   s.description      = <<-DESC
 Publishes what iPhone Duo reports natively, such as the vertical bar, the hinge
