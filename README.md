@@ -290,7 +290,9 @@ FoldBridgeScope(
   Flutter app. `FoldScaffold` makes the room itself, while
   `FoldGeometry.strip` stays null there. Right-to-left layouts are untested.
 - `FoldSplitView` measures where it sits after it builds, resizes or scrolls,
-  and catches up one frame later.
+  and catches up one frame later. During a page transition it is laid out as
+  where its page comes to rest, and moves with the page. On a route that rests
+  elsewhere, such as a Cupertino sheet, it catches up when the transition ends.
 - While the device rotates, folds or unfolds, the reserved regions can lead the
   size of the window by a frame or two.
 - Tested on the iPhone Duo simulator with iOS 27.1. Android foldables follow
