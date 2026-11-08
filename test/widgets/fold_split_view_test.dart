@@ -306,6 +306,39 @@ void main() {
     );
   });
 
+  testWidgets('goes idle on a kept-alive page scrolled out of view', (
+    tester,
+  ) async {
+    final controller = PageController();
+    addTearDown(controller.dispose);
+
+    await _pumpPose(
+      tester,
+      FoldTestPose.duoHalfOpenedLandscape,
+      PageView(
+        controller: controller,
+        children: const [
+          _KeptAlive(child: _splitView),
+          SizedBox.expand(),
+        ],
+      ),
+    );
+
+    controller.jumpToPage(1);
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.binding.hasScheduledFrame, isFalse);
+
+    controller.jumpToPage(0);
+    await tester.pump();
+
+    expect(
+      tester.getRect(find.byKey(_firstKey)),
+      const Rect.fromLTRB(0, 0, _foldStart, _innerShortSide),
+    );
+  });
+
   testWidgets('keeps the state of the panes when the fold comes and goes', (
     tester,
   ) async {
@@ -369,6 +402,29 @@ class _StatefulPane extends StatefulWidget {
 class _StatefulPaneState extends State<_StatefulPane> {
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
+}
+
+/// Keeps [child] alive while its page is scrolled out of view.
+class _KeptAlive extends StatefulWidget {
+  const _KeptAlive({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeptAlive> createState() => _KeptAliveState();
+}
+
+class _KeptAliveState extends State<_KeptAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    return widget.child;
+  }
 }
 
 /// Pumps [child] in a window of [pose], then once more for the split view to

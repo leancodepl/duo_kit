@@ -173,7 +173,8 @@ class _WindowLayoutBuilderState extends State<_WindowLayoutBuilder> {
     }
 
     final origin = box.localToGlobal(Offset.zero);
-    if (origin != _origin) {
+    // Unpainted kept-alive pages measure NaN and would rebuild every frame.
+    if (origin.isFinite && origin != _origin) {
       setState(() => _origin = origin);
     }
   }
