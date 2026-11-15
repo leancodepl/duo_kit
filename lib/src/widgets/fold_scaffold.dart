@@ -24,7 +24,8 @@ enum FoldNavigationPlacement {
   };
 }
 
-/// Builds the navigation of a [FoldScaffold] for [placement].
+/// Builds the navigation of a [FoldScaffold] for [placement], with a [context]
+/// that has the [MediaQuery] of the navigation.
 typedef FoldNavigationBuilder =
     Widget Function(BuildContext context, FoldNavigationPlacement placement);
 
@@ -118,7 +119,9 @@ class FoldScaffold extends StatelessWidget {
           id: _FoldScaffoldSlot.navigation,
           child: MediaQuery(
             data: navigationData,
-            child: navigationBuilder(context, placement),
+            child: Builder(
+              builder: (context) => navigationBuilder(context, placement),
+            ),
           ),
         ),
       ],

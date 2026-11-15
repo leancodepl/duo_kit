@@ -68,6 +68,23 @@ void main() {
     },
   );
 
+  testWidgets(
+    'builds the navigation with the padding of the strip',
+    variant: _ios,
+    (tester) async {
+      final paddings = <EdgeInsets>[];
+
+      await _pumpScaffold(
+        tester,
+        FoldTestPose.duoCoverWithOcclusions.data,
+        onBuildNavigation: (context) =>
+            paddings.add(MediaQuery.paddingOf(context)),
+      );
+
+      expect(paddings.last, const EdgeInsets.only(top: 170, bottom: 34));
+    },
+  );
+
   testWidgets('puts the navigation in a strip on the left', variant: _ios, (
     tester,
   ) async {
@@ -277,6 +294,7 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
   double? verticalBarWidth = FoldScaffold.defaultVerticalBarWidth,
   bool resizeToAvoidBottomInset = true,
   Widget body = const _StatefulBody(key: _bodyKey),
+  ValueSetter<BuildContext>? onBuildNavigation,
 }) async {
   final placements = <FoldNavigationPlacement>[];
 
@@ -299,6 +317,7 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
             body: body,
             navigationBuilder: (context, placement) {
               placements.add(placement);
+              onBuildNavigation?.call(context);
 
               return SizedBox(
                 key: _navigationKey,
