@@ -216,6 +216,28 @@ void main() {
     );
   }
 
+  testWidgets(
+    'keeps the body above the navigation and the bottom inset of the '
+    'navigation with the keyboard up when not resizing',
+    variant: _ios,
+    (tester) async {
+      await _pumpScaffold(
+        tester,
+        _showKeyboard(FoldTestPose.duoInnerPortrait.data, 300),
+        resizeToAvoidBottomInset: false,
+      );
+
+      expect(
+        tester.getRect(find.byKey(_bodyKey)),
+        const Rect.fromLTRB(0, 0, 669, 951 - _navigationHeight),
+      );
+      expect(
+        _getPaddingOf(tester, _navigationKey),
+        const EdgeInsets.only(bottom: 34),
+      );
+    },
+  );
+
   testWidgets('keeps the body state when the navigation moves', variant: _ios, (
     tester,
   ) async {
@@ -253,6 +275,7 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
   FoldVerticalBarEdge verticalBarEdge = FoldVerticalBarEdge.unspecified,
   TextDirection textDirection = TextDirection.ltr,
   double? verticalBarWidth = FoldScaffold.defaultVerticalBarWidth,
+  bool resizeToAvoidBottomInset = true,
   Widget body = const _StatefulBody(key: _bodyKey),
 }) async {
   final placements = <FoldNavigationPlacement>[];
@@ -272,6 +295,7 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
           child: FoldScaffold(
             detectStrip: detectStrip,
             verticalBarWidth: verticalBarWidth,
+            resizeToAvoidBottomInset: resizeToAvoidBottomInset,
             body: body,
             navigationBuilder: (context, placement) {
               placements.add(placement);

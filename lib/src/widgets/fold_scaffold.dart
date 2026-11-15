@@ -39,7 +39,8 @@ typedef FoldNavigationBuilder =
 /// clearances of the camera and status cluster plus the bottom inset. The
 /// body loses the padding of the edge the navigation takes. While the keyboard
 /// covers the navigation at the bottom, the body reaches behind it, so a
-/// `Scaffold` in the body ends above the keyboard and the navigation.
+/// `Scaffold` in the body ends above the keyboard and the navigation, unless
+/// [resizeToAvoidBottomInset] is false.
 ///
 /// Its left and right edges must meet the edges of the window, which is where
 /// a strip lies.
@@ -51,6 +52,7 @@ class FoldScaffold extends StatelessWidget {
     required this.navigationBuilder,
     this.detectStrip,
     this.verticalBarWidth = defaultVerticalBarWidth,
+    this.resizeToAvoidBottomInset = true,
   });
 
   /// The width of the strip the system keeps on iPhone Duo.
@@ -68,6 +70,11 @@ class FoldScaffold extends StatelessWidget {
   /// The width of the navigation on the edge of [FoldGeometry.verticalBarEdge]
   /// where the window has no strip, or null to keep it at the bottom there.
   final double? verticalBarWidth;
+
+  /// Whether the body reaches behind the navigation the keyboard covers; when
+  /// false, the body stays above the navigation, which keeps the bottom inset,
+  /// as below a `Scaffold` with `resizeToAvoidBottomInset` false.
+  final bool resizeToAvoidBottomInset;
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +96,7 @@ class FoldScaffold extends StatelessWidget {
     );
     final navigationData = switch (strip) {
       final strip? => _getStripData(mediaQuery, strip),
-      null => mediaQuery.removePadding(removeTop: true),
+      null => _getBottomData(mediaQuery),
     };
 
     // The same children in every pose, so the body keeps its state when the
@@ -98,7 +105,9 @@ class FoldScaffold extends StatelessWidget {
       delegate: _FoldScaffoldLayout(
         placement: placement,
         strip: strip,
-        keyboardHeight: mediaQuery.viewInsets.bottom,
+        keyboardHeight: resizeToAvoidBottomInset
+            ? mediaQuery.viewInsets.bottom
+            : 0,
       ),
       children: [
         LayoutId(
@@ -159,6 +168,18 @@ class FoldScaffold extends StatelessWidget {
       bottomClearance: 0,
       isClearanceEstimated: false,
     );
+  }
+
+  MediaQueryData _getBottomData(MediaQueryData mediaQuery) {
+    final data = mediaQuery.removePadding(removeTop: true);
+    final keepsBottomInset =
+        !resizeToAvoidBottomInset && mediaQuery.viewInsets.bottom > 0;
+
+    return keepsBottomInset
+        ? data.copyWith(
+            padding: data.padding.copyWith(bottom: data.viewPadding.bottom),
+          )
+        : data;
   }
 
   MediaQueryData _getStripData(MediaQueryData mediaQuery, FoldStrip strip) {

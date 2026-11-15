@@ -169,7 +169,9 @@ inset, or in the strip the room taken by the camera and the status cluster – s
 a `SafeArea` inside it keeps it clear. The body stays the same widget in every
 pose and keeps its state. While the keyboard is up, a `Scaffold` in the body
 ends above the keyboard and the navigation, as it does above a Material
-`bottomNavigationBar`.
+`bottomNavigationBar`. With `resizeToAvoidBottomInset: false` the body stays
+above the navigation and the keyboard covers both, as below a `Scaffold` that
+does not resize.
 
 ![The navigation in the strip of the cover display, below the status cluster, and along the bottom edge of the inner display in portrait][navigation-img]
 
