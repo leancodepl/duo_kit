@@ -103,8 +103,9 @@ duo_kit reads `MediaQuery.viewPadding` and `MediaQuery.displayFeatures`:
   too, and use only one. On other platforms and on devices without a hinge it
   passes its child through.
 
-  With the fold published, Flutter keeps dialogs, sheets and pickers on one side
-  of it while the device is half open, as it does on Android.
+  With the fold published, Flutter keeps its dialogs, sheets and pickers on one
+  side of it while the device is half open, as it does on Android. Routes of
+  your own need [one more widget](#dialogs-and-sheets).
 
 `FoldBridge` also reports what `MediaQuery` has no room for:
 
@@ -139,9 +140,10 @@ turns on about a second after the device comes to rest half open.
   older one, make your `AppDelegate` a `FlutterImplicitEngineDelegate`,
   register plugins in `didInitializeImplicitFlutterEngine`, and add a
   `UIApplicationSceneManifest` with `FlutterSceneDelegate` to `Info.plist`.
-- **Target iOS 15.0 or later**, in the Runner target and in your pods. Xcode 27
-  rejects lower deployment targets, and the Flutter 3.41 template still sets
-  13.0.
+- **Target iOS 15.0 or later** in the Runner target, and below Flutter 3.47 in
+  your pods too. Xcode 27 rejects lower deployment targets, and the Flutter
+  3.41 template still sets 13.0. From Flutter 3.47 the CocoaPods script drops
+  the lower targets of pods itself.
 - **Do not lock the orientation.** With `UIRequiresFullScreen` and portrait as
   the only orientation in `Info.plist`, iOS scales the app into a portrait
   window and reports no reserved regions, so no fold. On the simulator the
@@ -172,6 +174,11 @@ ends above the keyboard and the navigation, as it does above a Material
 `bottomNavigationBar`. With `resizeToAvoidBottomInset: false` the body stays
 above the navigation and the keyboard covers both, as below a `Scaffold` that
 does not resize.
+
+The body loses the inset of the strip, so `FoldGeometry.of` in it finds no
+strip; read it above the `FoldScaffold`. Pages pushed above the scaffold cover
+the strip unless they keep clear of it with a `SafeArea`, as of a notch in
+landscape.
 
 ![The navigation in the strip of the cover display, below the status cluster, and along the bottom edge of the inner display in portrait][navigation-img]
 
@@ -205,9 +212,24 @@ vertical fold or above a horizontal one, and `second` on the other side. Each
 pane keeps only the padding and the view insets, such as the keyboard, of the
 edges it touches, and only the display features overlapping the pane: there
 `FoldGeometry.of` finds no fold, and a `Navigator` in the pane opens its dialogs
-and sheets in it (`showDialog` needs `useRootNavigator: false`). Without a fold
-it uses your layout; put each pane in it once.
+and sheets in it (`showDialog` needs `useRootNavigator: false`). Their barrier
+dims only that pane, and the other pane still takes taps; to dim the whole
+window, open them on the root navigator with a `FoldAnchor`, which picks the
+trailing half. Without a fold it uses your layout; put each pane in it once.
 Decide when two panes fit with your own breakpoint.
+
+Like a dialog in one half, a pane keeps the size of the window in its
+`MediaQuery`. Lay it out by its constraints, or give it its own size if it
+lays out by `MediaQuery.sizeOf`:
+
+```dart
+LayoutBuilder(
+  builder: (context, constraints) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(size: constraints.biggest),
+    child: details,
+  ),
+)
+```
 
 A pane your layout leaves out loses its state. To keep it, hide it instead:
 
@@ -232,8 +254,27 @@ showDialog(
 ```
 
 `FoldAnchor.content` opens above a horizontal fold, `FoldAnchor.controls` below
-it; across a vertical fold both open on the trailing side. Overlays that are not
-routes can do the same with `DisplayFeatureSubScreen`.
+it; across a vertical fold both open on the trailing side. On the inner display
+that half holds the strip, which a sheet's content gets as padding: keep it in
+a `SafeArea`.
+
+Flutter keeps its own dialogs, sheets, pickers and menus on one side of the
+fold. A route of your own spans it until you wrap its page in
+`DisplayFeatureSubScreen`, the widget Flutter uses. Leave the backdrop to
+`barrierColor`, which dims the whole window, not the page's half:
+
+```dart
+PageRouteBuilder<void>(
+  opaque: false,
+  barrierColor: Colors.black54,
+  pageBuilder: (context, _, _) => DisplayFeatureSubScreen(
+    anchorPoint: FoldAnchor.controls.resolvePoint(context),
+    child: const MySheet(),
+  ),
+)
+```
+
+Overlays that are not routes can use `DisplayFeatureSubScreen` the same way.
 
 <img src="https://raw.githubusercontent.com/leancodepl/duo_kit/refs/heads/main/doc/imgs/dialogs.gif" width="360" alt="iPhone Duo half open like a laptop: a reminder opens above the fold as content, and stream controls below it as controls">
 
@@ -259,12 +300,23 @@ camera and the status cluster in orange, and the fold in red.
 ```dart
 import 'package:duo_kit/debug.dart';
 
-kDebugMode ? FoldDebugTools(child: app) : app
+// flutter run --dart-define=FOLD=book
+const fold = String.fromEnvironment('FOLD');
+
+kDebugMode && fold.isNotEmpty
+    ? FoldDebugTools(
+        initialSimulation: FoldSimulation.values.byName(fold),
+        child: app,
+      )
+    : app
 ```
 
 A button at the left edge switches between poses – a strip, a fold like a book,
 a fold like a laptop – on any device, and holding it shows or hides the geometry
-over your app. Place it below `FoldBridge`.
+over your app. Place it below `FoldBridge`. The button and the geometry show
+over the app from the start, also in widget tests that pump it, so turn the
+tools on with a define, as above, rather than in every debug build. `FOLD=off`
+starts them without a simulated fold.
 
 ### Tests
 
@@ -300,6 +352,9 @@ FoldBridgeScope(
   and catches up one frame later. During a page transition it is laid out as
   where its page comes to rest, and moves with the page. On a route that rests
   elsewhere, such as a Cupertino sheet, it catches up when the transition ends.
+- Flutter places a route in its half as if the navigator filled the window.
+  Below a navigator that starts further in, such as next to a side menu, the
+  trailing half comes out shifted by that distance, under the strip.
 - While the device rotates, folds or unfolds, the reserved regions can lead the
   size of the window by a frame or two.
 - Tested on the iPhone Duo simulator with iOS 27.1. Android foldables follow

@@ -18,6 +18,7 @@
 - Read `FoldGeometry.of(context).division` above a `FoldSplitView`, not in its panes.
 - While the keyboard is up, the body of a `FoldScaffold` now reaches behind the navigation at the bottom. Pass `resizeToAvoidBottomInset: false` if it does not resize for the keyboard, to keep it above the navigation as in 0.1.
 - A `navigationBuilder` that read the window's `MediaQuery` from its context now reads the navigation's; read the window's above the `FoldScaffold`.
+- Drop workarounds for dialogs of a `Navigator` in a pane that opened with no size, and for a `FoldSplitView` that stayed unsplit after a route above it closed.
 - From `duo_kit_ios`: `DuoKitIos` is now `FoldBridge`, `DuoKitIos.hingeOf` is `FoldHinge.maybeOf` and `DuoKitIos.verticalBarEdgeOf` is `FoldGeometry.of(context).verticalBarEdge`.
 
 ## 0.1.2
