@@ -8,18 +8,13 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.package }} on Flutter ${{ matrix.version }}
+    name: Test on Flutter ${{ matrix.version }}
 
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        package: [duo_kit, duo_kit_ios]
         version: ['3.41.x']
-
-    defaults:
-      run:
-        working-directory: packages/${{ matrix.package }}
 
     steps:
       - name: Checkout
@@ -41,11 +36,11 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: ${{ runner.os }}-pub-
 
-      # Resolves the whole pub workspace, both packages and the example.
+      # Resolves the whole pub workspace, the package and its example.
       - name: Download pub dependencies
         run: flutter pub get
 
-      # Covers the example app too, which lives in packages/duo_kit.
+      # Covers the example app too.
       - name: Run analyzer
         run: flutter analyze
 
@@ -59,14 +54,39 @@ jobs:
         # We don't want it to fail the CI, it's just to see how would `pub publish` behave.
         run: dart pub publish --dry-run || true
 
-  pana-score:
-    name: pana score of ${{ matrix.package }}
+  build-example-ios:
+    name: Build the example on ${{ matrix.runner }} with ${{ matrix.dependencies }}
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        package: [duo_kit, duo_kit_ios]
+        # Xcode 26.6 compiles the bridge to nothing; Xcode 27.1 compiles it.
+        runner: [macos-26, xcode-27]
+        dependencies: [CocoaPods, Swift Package Manager]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.x'
+          cache: true
+
+      - name: Enable Swift Package Manager
+        if: matrix.dependencies == 'Swift Package Manager'
+        run: flutter config --enable-swift-package-manager
+
+      - name: Build the example
+        working-directory: example
+        run: flutter build ios --debug --no-codesign
+
+  pana-score:
+    name: pana score
+
+    runs-on: ubuntu-latest
 
     permissions:
       contents: read
@@ -80,4 +100,4 @@ jobs:
         continue-on-error: true
         uses: leancodepl/mobile-tools/.github/actions/pana-score@e9f138c252f8e2254c88273367958fcc6bb39cad # pana-score-v1.3
         with:
-          path: packages/${{ matrix.package }}
+          path: .
