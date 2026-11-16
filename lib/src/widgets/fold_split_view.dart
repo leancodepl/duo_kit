@@ -16,7 +16,9 @@ typedef FoldSplitViewBuilder =
 /// The fold itself is left empty. Across a vertical fold [first] takes the
 /// leading side; across a horizontal fold, the top. Each pane keeps only the
 /// padding and the view insets, such as the keyboard, of the edges of this
-/// widget it touches.
+/// widget it touches, and only the display features overlapping the pane, so
+/// [FoldGeometry.of] finds no fold there and routes of a [Navigator] in the
+/// pane open in it.
 ///
 /// The panes keep their state when the fold comes and goes, as long as
 /// [unfoldedBuilder] puts each of them in its layout once.
@@ -24,8 +26,10 @@ typedef FoldSplitViewBuilder =
 /// The fold comes from [FoldGeometry.of] in window coordinates. This widget
 /// measures where it sits in the window after each build, resize or scroll of
 /// the nearest [Scrollable], so it can be placed anywhere, such as below a top
-/// bar or on a page of a [PageView], and catches up one frame later. Any other
-/// move is picked up only at its next build.
+/// bar or on a page of a [PageView], and catches up one frame later. A page
+/// transition moves it with its page, laid out as where the page comes to
+/// rest; on a route that rests elsewhere, such as a sheet, it catches up when
+/// the transition ends. Any other move is picked up only at its next build.
 ///
 /// Needs bounded constraints; with unbounded ones it uses [unfoldedBuilder].
 class FoldSplitView extends StatefulWidget {
@@ -71,6 +75,7 @@ class _FoldSplitViewState extends State<FoldSplitView> {
       builder: (context, origin, size) =>
           switch (_findLocalFold(division, origin: origin, size: size)) {
             final fold? => _SplitPanes(
+              origin: origin,
               size: size,
               fold: fold.rect,
               axis: fold.axis,
@@ -116,8 +121,8 @@ typedef _LocalFold = ({Rect rect, Axis axis});
 /// A [LayoutBuilder] that also passes where it sits in the window.
 ///
 /// While it [tracksOrigin], it measures where it sits a frame after each build,
-/// resize or scroll of the nearest [Scrollable], and builds again if that
-/// moved.
+/// resize or scroll of the nearest [Scrollable] and each start or end of a
+/// transition of its route, and builds again if that moved.
 class _WindowLayoutBuilder extends StatefulWidget {
   const _WindowLayoutBuilder({
     required this.tracksOrigin,
@@ -139,6 +144,9 @@ class _WindowLayoutBuilderState extends State<_WindowLayoutBuilder> {
   /// rebuilding or resizing it.
   ScrollPosition? _scrollPosition;
 
+  /// The route holding this widget; its transitions move it without a rebuild.
+  ModalRoute<Object?>? _route;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -148,13 +156,33 @@ class _WindowLayoutBuilderState extends State<_WindowLayoutBuilder> {
       _scrollPosition?.removeListener(_scheduleOriginUpdate);
       _scrollPosition = scrollPosition?..addListener(_scheduleOriginUpdate);
     }
+
+    final route = ModalRoute.of(context);
+    if (route != _route) {
+      _updateRouteListeners(_route, add: false);
+      _updateRouteListeners(route, add: true);
+      _route = route;
+    }
   }
 
   @override
   void dispose() {
     _scrollPosition?.removeListener(_scheduleOriginUpdate);
+    _updateRouteListeners(_route, add: false);
     super.dispose();
   }
+
+  void _updateRouteListeners(ModalRoute<Object?>? route, {required bool add}) {
+    for (final animation in [route?.animation, route?.secondaryAnimation]) {
+      if (add) {
+        animation?.addStatusListener(_onRouteStatusChanged);
+      } else {
+        animation?.removeStatusListener(_onRouteStatusChanged);
+      }
+    }
+  }
+
+  void _onRouteStatusChanged(AnimationStatus status) => _scheduleOriginUpdate();
 
   void _scheduleOriginUpdate() {
     if (widget.tracksOrigin) {
@@ -172,10 +200,28 @@ class _WindowLayoutBuilderState extends State<_WindowLayoutBuilder> {
       return;
     }
 
-    final origin = box.localToGlobal(Offset.zero);
-    if (origin != _origin) {
+    final origin = _measureOrigin(box);
+    // Unpainted kept-alive pages measure NaN and would rebuild every frame.
+    if (origin.isFinite && origin != _origin) {
       setState(() => _origin = origin);
     }
+  }
+
+  /// Where [box] sits, or where it rests while its route moves or is covered.
+  Offset _measureOrigin(RenderBox box) {
+    final route = _route;
+    final isRouteResting =
+        (route?.animation?.isCompleted ?? true) &&
+        (route?.secondaryAnimation?.isDismissed ?? true);
+    final page = route?.subtreeContext?.findRenderObject();
+    final overlay = route?.navigator?.overlay?.context.findRenderObject();
+    if (isRouteResting || page is! RenderBox || overlay is! RenderBox) {
+      return box.localToGlobal(Offset.zero);
+    }
+
+    // A transition moves the whole page from where the navigator lays it out.
+    return overlay.localToGlobal(Offset.zero) +
+        box.localToGlobal(Offset.zero, ancestor: page);
   }
 
   @override
@@ -189,9 +235,10 @@ class _WindowLayoutBuilderState extends State<_WindowLayoutBuilder> {
 }
 
 /// Lays [first] and [second] out on either side of [fold] in a [FoldSplitView]
-/// of [size], leaving the fold empty.
+/// of [size] at [origin] in the window, leaving the fold empty.
 class _SplitPanes extends StatelessWidget {
   const _SplitPanes({
+    required this.origin,
     required this.size,
     required this.fold,
     required this.axis,
@@ -199,6 +246,7 @@ class _SplitPanes extends StatelessWidget {
     required this.second,
   });
 
+  final Offset origin;
   final Size size;
   final Rect fold;
   final Axis axis;
@@ -237,7 +285,8 @@ class _SplitPanes extends StatelessWidget {
   }
 
   /// Keeps the padding and the view insets, such as the keyboard, only on the
-  /// edges of [bounds] the pane touches.
+  /// edges of [bounds] the pane touches, and the display features overlapping
+  /// the pane.
   Widget _buildPane(
     MediaQueryData mediaQuery, {
     required Rect pane,
@@ -248,6 +297,11 @@ class _SplitPanes extends StatelessWidget {
     final removeTop = pane.top > bounds.top;
     final removeRight = pane.right < bounds.right;
     final removeBottom = pane.bottom < bounds.bottom;
+
+    // As in DisplayFeatureSubScreen, so routes in the pane skip the fold.
+    final displayFeatures = mediaQuery.displayFeatures
+        .where((feature) => feature.bounds.shift(-origin).overlaps(pane))
+        .toList();
 
     return Positioned.fromRect(
       rect: pane,
@@ -264,7 +318,8 @@ class _SplitPanes extends StatelessWidget {
               removeTop: removeTop,
               removeRight: removeRight,
               removeBottom: removeBottom,
-            ),
+            )
+            .copyWith(displayFeatures: displayFeatures),
         child: child,
       ),
     );

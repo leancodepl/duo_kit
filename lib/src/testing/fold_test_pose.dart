@@ -1,12 +1,15 @@
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
 import 'package:duo_kit/src/bridge/fold_bridge.dart';
+import 'package:duo_kit/src/bridge/fold_bridge_scope.dart';
+import 'package:duo_kit/src/bridge/fold_vertical_bar_edge.dart';
 import 'package:flutter/widgets.dart';
 
 const _coverWidth = 466.0;
 const _coverHeight = 678.0;
 const _innerLongSide = 951.0;
 const _innerShortSide = 669.0;
+const _innerSplitViewLeftWidth = 469.0;
 
 const _stripWidth = 84.0;
 const _homeIndicatorHeight = 34.0;
@@ -30,6 +33,7 @@ const _coverSize = Size(_coverWidth, _coverHeight);
 const _coverLandscapeSize = Size(_coverHeight, _coverWidth);
 const _innerLandscapeSize = Size(_innerLongSide, _innerShortSide);
 const _innerPortraitSize = Size(_innerShortSide, _innerLongSide);
+const _innerSplitViewLeftSize = Size(_innerSplitViewLeftWidth, _innerShortSide);
 
 const _rightStripPadding = EdgeInsets.only(
   right: _stripWidth,
@@ -39,6 +43,7 @@ const _leftStripPadding = EdgeInsets.only(
   left: _stripWidth,
   bottom: _homeIndicatorHeight,
 );
+const _homeIndicatorPadding = EdgeInsets.only(bottom: _homeIndicatorHeight);
 const _innerPortraitPadding = EdgeInsets.only(
   top: _innerPortraitTopInset,
   bottom: _homeIndicatorHeight,
@@ -132,10 +137,10 @@ const _portraitFold = DisplayFeature(
 /// puts them there: occlusions as cutouts, and the fold only while the device
 /// is half open.
 ///
-/// The inner display has one landscape pose: in both landscape rotations the
-/// system keeps the strip and the status cluster on the right. On the cover
-/// display the strip follows the camera, so it has a landscape pose for each
-/// side.
+/// The inner display has one full-screen landscape pose: in both landscape
+/// rotations the system keeps the strip and the status cluster on the right.
+/// On the cover display the strip follows the camera, so it has a landscape
+/// pose for each side.
 enum FoldTestPose {
   /// The cover display of the closed device, with no display features, as
   /// Flutter reports it without a [FoldBridge].
@@ -206,6 +211,17 @@ enum FoldTestPose {
       padding: _innerPortraitPadding,
       viewPadding: _innerPortraitPadding,
       displayFeatures: [_innerPortraitStatusCluster],
+    ),
+  ),
+
+  /// The app on the left of Split View on the inner display, where iOS reports
+  /// [FoldVerticalBarEdge.leading] but no inset; pair it with a
+  /// [FoldBridgeScope].
+  duoInnerSplitViewLeft(
+    MediaQueryData(
+      size: _innerSplitViewLeftSize,
+      padding: _homeIndicatorPadding,
+      viewPadding: _homeIndicatorPadding,
     ),
   ),
 

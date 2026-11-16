@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:duo_kit/duo_kit.dart';
 import 'package:duo_kit/testing.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _bodyKey = ValueKey('body');
+const _contentKey = ValueKey('content');
 const _navigationKey = ValueKey('navigation');
 const _navigationHeight = 60.0;
 
@@ -65,6 +68,23 @@ void main() {
     },
   );
 
+  testWidgets(
+    'builds the navigation with the padding of the strip',
+    variant: _ios,
+    (tester) async {
+      final paddings = <EdgeInsets>[];
+
+      await _pumpScaffold(
+        tester,
+        FoldTestPose.duoCoverWithOcclusions.data,
+        onBuildNavigation: (context) =>
+            paddings.add(MediaQuery.paddingOf(context)),
+      );
+
+      expect(paddings.last, const EdgeInsets.only(top: 170, bottom: 34));
+    },
+  );
+
   testWidgets('puts the navigation in a strip on the left', variant: _ios, (
     tester,
   ) async {
@@ -89,6 +109,152 @@ void main() {
     );
   });
 
+  testWidgets(
+    'puts the navigation on the edge of the vertical bar where the window '
+    'has no strip',
+    variant: _ios,
+    (tester) async {
+      final placements = await _pumpScaffold(
+        tester,
+        FoldTestPose.duoInnerSplitViewLeft.data,
+        verticalBarEdge: FoldVerticalBarEdge.leading,
+      );
+
+      expect(placements.last, FoldNavigationPlacement.left);
+      expect(
+        tester.getRect(find.byKey(_navigationKey)),
+        const Rect.fromLTRB(0, 0, 84, 669),
+      );
+      expect(
+        tester.getRect(find.byKey(_bodyKey)),
+        const Rect.fromLTRB(84, 0, 469, 669),
+      );
+      expect(
+        _getPaddingOf(tester, _bodyKey),
+        const EdgeInsets.only(bottom: 34),
+      );
+      expect(
+        _getPaddingOf(tester, _navigationKey),
+        const EdgeInsets.only(bottom: 34),
+      );
+    },
+  );
+
+  testWidgets(
+    'puts the navigation of a right-to-left app on the right for a leading '
+    'vertical bar',
+    variant: _ios,
+    (tester) async {
+      final placements = await _pumpScaffold(
+        tester,
+        FoldTestPose.duoInnerSplitViewLeft.data,
+        verticalBarEdge: FoldVerticalBarEdge.leading,
+        textDirection: TextDirection.rtl,
+        verticalBarWidth: 100,
+      );
+
+      expect(placements.last, FoldNavigationPlacement.right);
+      expect(
+        tester.getRect(find.byKey(_navigationKey)),
+        const Rect.fromLTRB(369, 0, 469, 669),
+      );
+    },
+  );
+
+  testWidgets(
+    'keeps the navigation at the bottom for a vertical bar without a width',
+    variant: _ios,
+    (tester) async {
+      final placements = await _pumpScaffold(
+        tester,
+        FoldTestPose.duoInnerSplitViewLeft.data,
+        verticalBarEdge: FoldVerticalBarEdge.leading,
+        verticalBarWidth: null,
+      );
+
+      expect(placements.last, FoldNavigationPlacement.bottom);
+    },
+  );
+
+  testWidgets(
+    'keeps the navigation at the bottom for a vertical bar edge in a window '
+    'with a top inset',
+    variant: _ios,
+    (tester) async {
+      // While the device closes from portrait, the edge changes first.
+      final placements = await _pumpScaffold(
+        tester,
+        FoldTestPose.duoInnerPortrait.data,
+        verticalBarEdge: FoldVerticalBarEdge.leading,
+      );
+
+      expect(placements.last, FoldNavigationPlacement.bottom);
+    },
+  );
+
+  testWidgets(
+    'prefers the strip of the system to the vertical bar width',
+    variant: _ios,
+    (tester) async {
+      final placements = await _pumpScaffold(
+        tester,
+        FoldTestPose.duoCoverWithOcclusions.data,
+        verticalBarEdge: FoldVerticalBarEdge.trailing,
+        verticalBarWidth: 100,
+      );
+
+      expect(placements.last, FoldNavigationPlacement.right);
+      expect(
+        tester.getRect(find.byKey(_navigationKey)),
+        const Rect.fromLTRB(382, 0, 466, 678),
+      );
+    },
+  );
+
+  for (final (keyboardHeight, contentBottom) in [
+    (300.0, 951 - 300.0),
+    // While the keyboard comes up, the navigation still shows above it.
+    (40.0, 951 - _navigationHeight),
+  ]) {
+    testWidgets(
+      'ends a Scaffold in the body above a keyboard of $keyboardHeight and '
+      'the navigation at the bottom',
+      variant: _ios,
+      (tester) async {
+        await _pumpScaffold(
+          tester,
+          _showKeyboard(FoldTestPose.duoInnerPortrait.data, keyboardHeight),
+          body: const Scaffold(body: SizedBox.expand(key: _contentKey)),
+        );
+
+        expect(tester.getRect(find.byKey(_contentKey)).bottom, contentBottom);
+        expect(tester.getRect(find.byKey(_navigationKey)).bottom, 951);
+      },
+    );
+  }
+
+  testWidgets(
+    'keeps the body above the navigation and the bottom inset of the '
+    'navigation with the keyboard up when not resizing',
+    variant: _ios,
+    (tester) async {
+      await _pumpScaffold(
+        tester,
+        _showKeyboard(FoldTestPose.duoInnerPortrait.data, 300),
+        resizeToAvoidBottomInset: false,
+      );
+
+      expect(
+        tester.getRect(find.byKey(_bodyKey)),
+        const Rect.fromLTRB(0, 0, 669, 951 - _navigationHeight),
+      );
+      expect(
+        _getPaddingOf(tester, _navigationKey),
+        const EdgeInsets.only(bottom: 34),
+      );
+    },
+  );
+
   testWidgets('keeps the body state when the navigation moves', variant: _ios, (
     tester,
   ) async {
@@ -109,6 +275,7 @@ void main() {
         tester,
         FoldTestPose.duoCover.data,
         detectStrip: false,
+        verticalBarEdge: FoldVerticalBarEdge.trailing,
       );
 
       expect(placements.last, FoldNavigationPlacement.bottom);
@@ -122,6 +289,12 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
   WidgetTester tester,
   MediaQueryData data, {
   bool? detectStrip,
+  FoldVerticalBarEdge verticalBarEdge = FoldVerticalBarEdge.unspecified,
+  TextDirection textDirection = TextDirection.ltr,
+  double? verticalBarWidth = FoldScaffold.defaultVerticalBarWidth,
+  bool resizeToAvoidBottomInset = true,
+  Widget body = const _StatefulBody(key: _bodyKey),
+  ValueSetter<BuildContext>? onBuildNavigation,
 }) async {
   final placements = <FoldNavigationPlacement>[];
 
@@ -131,24 +304,30 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(
-    MediaQuery(
-      data: data,
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: FoldScaffold(
-          detectStrip: detectStrip,
-          body: const _StatefulBody(key: _bodyKey),
-          navigationBuilder: (context, placement) {
-            placements.add(placement);
+    FoldBridgeScope(
+      verticalBarEdge: verticalBarEdge,
+      child: MediaQuery(
+        data: data,
+        child: Directionality(
+          textDirection: textDirection,
+          child: FoldScaffold(
+            detectStrip: detectStrip,
+            verticalBarWidth: verticalBarWidth,
+            resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+            body: body,
+            navigationBuilder: (context, placement) {
+              placements.add(placement);
+              onBuildNavigation?.call(context);
 
-            return SizedBox(
-              key: _navigationKey,
-              height: switch (placement.axis) {
-                Axis.horizontal => _navigationHeight,
-                Axis.vertical => null,
-              },
-            );
-          },
+              return SizedBox(
+                key: _navigationKey,
+                height: switch (placement.axis) {
+                  Axis.horizontal => _navigationHeight,
+                  Axis.vertical => null,
+                },
+              );
+            },
+          ),
         ),
       ),
     ),
@@ -156,6 +335,16 @@ Future<List<FoldNavigationPlacement>> _pumpScaffold(
 
   return placements;
 }
+
+/// [data] with a keyboard of [height] up, which takes over the bottom inset as
+/// on iOS.
+MediaQueryData _showKeyboard(MediaQueryData data, double height) =>
+    data.copyWith(
+      viewInsets: EdgeInsets.only(bottom: height),
+      padding: data.padding.copyWith(
+        bottom: math.max(0, data.viewPadding.bottom - height),
+      ),
+    );
 
 EdgeInsets _getPaddingOf(WidgetTester tester, Key key) =>
     MediaQuery.paddingOf(tester.element(find.byKey(key)));
